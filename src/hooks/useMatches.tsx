@@ -80,7 +80,7 @@ export const useMatches = () => {
 
       if (error) throw error;
       
-      // Refetch matches to update the list
+      // Actualizar la lista de partidos inmediatamente
       await fetchMatches();
       return { data, error: null };
     } catch (err) {
@@ -100,7 +100,7 @@ export const useMatches = () => {
 
       if (error) throw error;
       
-      // Refetch matches to update current_players count
+      // Actualizar la lista de partidos
       await fetchMatches();
       return { error: null };
     } catch (err) {
@@ -120,7 +120,7 @@ export const useMatches = () => {
 
       if (error) throw error;
       
-      // Refetch matches to update current_players count
+      // Actualizar la lista de partidos
       await fetchMatches();
       return { error: null };
     } catch (err) {
