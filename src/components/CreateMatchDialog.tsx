@@ -12,6 +12,8 @@ import { CalendarIcon, MapPin, Users, Euro } from 'lucide-react';
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useMatches } from '@/hooks/useMatches';
+import { useToast } from '@/hooks/use-toast';
 
 interface CreateMatchDialogProps {
   open: boolean;
@@ -20,6 +22,7 @@ interface CreateMatchDialogProps {
 
 const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
   const [date, setDate] = useState<Date>();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     sport: '',
     title: '',
@@ -30,13 +33,77 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
     time: '',
   });
 
-  const sports = ['Fútbol', 'Tenis', 'Pádel', 'Voleibol', 'Baloncesto', 'Bádminton'];
+  const { createMatch } = useMatches();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const sports = [
+    { label: 'Fútbol', value: 'football' },
+    { label: 'Tenis', value: 'tennis' },
+    { label: 'Pádel', value: 'padel' },
+    { label: 'Voleibol', value: 'volleyball' },
+    { label: 'Baloncesto', value: 'basketball' },
+    { label: 'Bádminton', value: 'badminton' }
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Creating match:', { ...formData, date });
-    onOpenChange(false);
+    
+    if (!date || !formData.sport || !formData.title || !formData.location || !formData.time) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos obligatorios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await createMatch({
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        date: date,
+        time: formData.time,
+        sport_type: formData.sport,
+        max_players: parseInt(formData.maxPlayers) || 10,
+        price: parseFloat(formData.price) || 0,
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "¡Partido creado!",
+          description: "Tu partido se ha creado exitosamente",
+        });
+        onOpenChange(false);
+        // Reset form
+        setFormData({
+          sport: '',
+          title: '',
+          description: '',
+          location: '',
+          maxPlayers: '',
+          price: '',
+          time: '',
+        });
+        setDate(undefined);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error inesperado al crear el partido",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -62,8 +129,8 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
               </SelectTrigger>
               <SelectContent>
                 {sports.map((sport) => (
-                  <SelectItem key={sport} value={sport}>
-                    {sport}
+                  <SelectItem key={sport.value} value={sport.value}>
+                    {sport.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -187,14 +254,16 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
               variant="outline"
               onClick={() => onOpenChange(false)}
               className="flex-1"
+              disabled={loading}
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               className="flex-1 bg-blue-600 hover:bg-blue-700"
+              disabled={loading}
             >
-              Crear partido
+              {loading ? "Creando..." : "Crear partido"}
             </Button>
           </div>
         </form>

@@ -43,6 +43,51 @@ export const useMatches = () => {
     }
   };
 
+  const createMatch = async (matchData: {
+    title: string;
+    description?: string;
+    location: string;
+    date: Date;
+    time: string;
+    sport_type: string;
+    max_players: number;
+    price: number;
+  }) => {
+    if (!user) return { error: 'Usuario no autenticado' };
+
+    try {
+      // Combinar fecha y hora
+      const [hours, minutes] = matchData.time.split(':');
+      const combinedDateTime = new Date(matchData.date);
+      combinedDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+      const { data, error } = await supabase
+        .from('matches')
+        .insert([
+          {
+            title: matchData.title,
+            description: matchData.description,
+            location: matchData.location,
+            date: combinedDateTime.toISOString(),
+            sport_type: matchData.sport_type.toLowerCase(),
+            max_players: matchData.max_players,
+            price: matchData.price,
+            creator_id: user.id
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      // Refetch matches to update the list
+      await fetchMatches();
+      return { data, error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Error al crear el partido' };
+    }
+  };
+
   const joinMatch = async (matchId: string) => {
     if (!user) return { error: 'Usuario no autenticado' };
 
@@ -92,6 +137,7 @@ export const useMatches = () => {
     loading,
     error,
     refetch: fetchMatches,
+    createMatch,
     joinMatch,
     leaveMatch
   };
