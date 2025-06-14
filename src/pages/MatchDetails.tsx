@@ -1,5 +1,6 @@
 
 import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,38 +15,114 @@ import {
   MessageCircle,
   Share2
 } from 'lucide-react';
+import { useMatches } from '@/hooks/useMatches';
+import { useToast } from '@/hooks/use-toast';
 
 const MatchDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { getMatchById, joinMatch, leaveMatch } = useMatches();
+  const { toast } = useToast();
+  const [match, setMatch] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
-  // Mock data - en una app real esto vendría de una API
-  const match = {
-    id: parseInt(id || '1'),
-    sport: 'Fútbol',
-    title: 'Partido amistoso',
-    location: 'Parque Central',
-    fullAddress: 'Calle Principal 123, Madrid',
-    date: '2024-06-15',
-    time: '18:00',
-    duration: '90 min',
-    players: '6/10',
-    price: 'Gratis',
-    organizer: 'Carlos M.',
-    organizerRating: 4.8,
-    description: 'Partido amistoso de fútbol para pasar un buen rato. Todos los niveles son bienvenidos. Traer agua y ganas de jugar.',
-    requirements: ['Calzado deportivo', 'Ropa cómoda', 'Botella de agua'],
-    distance: '0.8 km'
+  useEffect(() => {
+    if (id) {
+      loadMatchDetails();
+    }
+  }, [id]);
+
+  const loadMatchDetails = async () => {
+    if (!id) return;
+    
+    setLoading(true);
+    const { data, error } = await getMatchById(id);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+      navigate('/');
+      return;
+    }
+    
+    setMatch(data);
+    setLoading(false);
+  };
+
+  const handleJoinMatch = async () => {
+    if (!match) return;
+    
+    setActionLoading(true);
+    const { error } = await joinMatch(match.id);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "¡Te has unido al partido!",
+        description: "Ahora formas parte de este partido",
+      });
+      // Recargar los detalles del partido
+      await loadMatchDetails();
+    }
+    
+    setActionLoading(false);
+  };
+
+  const handleLeaveMatch = async () => {
+    if (!match) return;
+    
+    setActionLoading(true);
+    const { error } = await leaveMatch(match.id);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Has salido del partido",
+        description: "Ya no formas parte de este partido",
+      });
+      // Recargar los detalles del partido
+      await loadMatchDetails();
+    }
+    
+    setActionLoading(false);
   };
 
   const getSportColor = (sport: string) => {
     const colors: { [key: string]: string } = {
-      'Fútbol': 'bg-green-100 text-green-800',
-      'Tenis': 'bg-yellow-100 text-yellow-800',
-      'Pádel': 'bg-purple-100 text-purple-800',
-      'Voleibol': 'bg-orange-100 text-orange-800',
+      'football': 'bg-green-100 text-green-800',
+      'tennis': 'bg-yellow-100 text-yellow-800',
+      'padel': 'bg-purple-100 text-purple-800',
+      'volleyball': 'bg-orange-100 text-orange-800',
+      'basketball': 'bg-red-100 text-red-800',
+      'badminton': 'bg-blue-100 text-blue-800',
     };
     return colors[sport] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getSportName = (sport: string) => {
+    const names: { [key: string]: string } = {
+      'football': 'Fútbol',
+      'tennis': 'Tenis',
+      'padel': 'Pádel',
+      'volleyball': 'Voleibol',
+      'basketball': 'Baloncesto',
+      'badminton': 'Bádminton',
+    };
+    return names[sport] || sport;
   };
 
   const formatDate = (dateString: string) => {
@@ -57,6 +134,38 @@ const MatchDetails = () => {
       year: 'numeric'
     });
   };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando detalles del partido...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!match) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Partido no encontrado</p>
+          <Button onClick={() => navigate('/')} className="mt-4">
+            Volver al inicio
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const canJoin = !match.is_participant && !match.is_creator && match.current_players < match.max_players;
+  const canLeave = match.is_participant && !match.is_creator;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -81,8 +190,8 @@ const MatchDetails = () => {
         <Card className="border-0 shadow-lg">
           <CardContent className="p-6">
             <div className="flex justify-between items-start mb-4">
-              <Badge className={getSportColor(match.sport)}>
-                {match.sport}
+              <Badge className={getSportColor(match.sport_type)}>
+                {getSportName(match.sport_type)}
               </Badge>
               <div className="flex space-x-2">
                 <Button variant="ghost" size="icon">
@@ -98,7 +207,7 @@ const MatchDetails = () => {
                 <Calendar className="h-5 w-5 mr-3 text-gray-400" />
                 <div>
                   <div className="font-medium">{formatDate(match.date)}</div>
-                  <div className="text-sm text-gray-600">{match.time} • {match.duration}</div>
+                  <div className="text-sm text-gray-600">{formatTime(match.date)}</div>
                 </div>
               </div>
               
@@ -106,24 +215,25 @@ const MatchDetails = () => {
                 <MapPin className="h-5 w-5 mr-3 text-gray-400" />
                 <div>
                   <div className="font-medium">{match.location}</div>
-                  <div className="text-sm text-gray-600">{match.fullAddress}</div>
                 </div>
               </div>
               
               <div className="flex items-center">
                 <Users className="h-5 w-5 mr-3 text-gray-400" />
                 <div>
-                  <div className="font-medium">{match.players} jugadores</div>
-                  <div className="text-sm text-gray-600">4 plazas disponibles</div>
+                  <div className="font-medium">{match.current_players}/{match.max_players} jugadores</div>
+                  <div className="text-sm text-gray-600">
+                    {match.max_players - match.current_players} plazas disponibles
+                  </div>
                 </div>
               </div>
               
-              {match.price && (
-                <div className="flex items-center">
-                  <Euro className="h-5 w-5 mr-3 text-gray-400" />
-                  <div className="font-medium text-blue-600">{match.price}</div>
+              <div className="flex items-center">
+                <Euro className="h-5 w-5 mr-3 text-gray-400" />
+                <div className="font-medium text-blue-600">
+                  {match.price > 0 ? `€${match.price}` : 'Gratis'}
                 </div>
-              )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -137,52 +247,75 @@ const MatchDetails = () => {
             <div className="flex items-center space-x-3 mb-4">
               <Avatar className="h-12 w-12">
                 <AvatarFallback className="bg-blue-100 text-blue-700">
-                  {match.organizer.split(' ').map(n => n[0]).join('')}
+                  OR
                 </AvatarFallback>
               </Avatar>
               <div>
-                <div className="font-medium">{match.organizer}</div>
-                <div className="text-sm text-gray-600">
-                  ⭐ {match.organizerRating} • 23 partidos organizados
-                </div>
+                <div className="font-medium">Organizador</div>
+                {match.is_creator && (
+                  <div className="text-sm text-blue-600">¡Eres tú!</div>
+                )}
               </div>
             </div>
-            <Button variant="outline" className="w-full">
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Contactar organizador
-            </Button>
+            {!match.is_creator && (
+              <Button variant="outline" className="w-full">
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Contactar organizador
+              </Button>
+            )}
           </CardContent>
         </Card>
 
         {/* Description Card */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg">Descripción</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <p className="text-gray-700 mb-4">{match.description}</p>
-            
-            <div>
-              <h4 className="font-medium mb-2">Requisitos:</h4>
-              <ul className="space-y-1">
-                {match.requirements.map((req, index) => (
-                  <li key={index} className="text-sm text-gray-600 flex items-center">
-                    <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mr-2"></span>
-                    {req}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+        {match.description && (
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-lg">Descripción</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <p className="text-gray-700">{match.description}</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Floating Action Button */}
       <div className="fixed bottom-4 left-4 right-4">
         <div className="max-w-md mx-auto">
-          <Button className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-lg font-medium shadow-lg">
-            Unirse al partido
-          </Button>
+          {canJoin && (
+            <Button 
+              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-lg font-medium shadow-lg"
+              onClick={handleJoinMatch}
+              disabled={actionLoading}
+            >
+              {actionLoading ? 'Uniéndose...' : 'Unirse al partido'}
+            </Button>
+          )}
+          {canLeave && (
+            <Button 
+              className="w-full h-12 bg-red-600 hover:bg-red-700 text-lg font-medium shadow-lg"
+              onClick={handleLeaveMatch}
+              disabled={actionLoading}
+            >
+              {actionLoading ? 'Saliendo...' : 'Salir del partido'}
+            </Button>
+          )}
+          {match.is_creator && (
+            <Button 
+              className="w-full h-12 bg-green-600 hover:bg-green-700 text-lg font-medium shadow-lg"
+              disabled
+            >
+              Eres el organizador
+            </Button>
+          )}
+          {match.current_players >= match.max_players && !match.is_participant && !match.is_creator && (
+            <Button 
+              className="w-full h-12 bg-gray-600 text-lg font-medium shadow-lg"
+              disabled
+            >
+              Partido completo
+            </Button>
+          )}
         </div>
       </div>
     </div>

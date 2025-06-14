@@ -16,6 +16,8 @@ export interface Match {
   price: number;
   created_at: string;
   updated_at: string;
+  is_creator?: boolean;
+  is_participant?: boolean;
 }
 
 export const useMatches = () => {
@@ -29,13 +31,35 @@ export const useMatches = () => {
     
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Obtener partidos con información de participación
+      const { data: matchesData, error: matchesError } = await supabase
         .from('matches')
         .select('*')
         .order('date', { ascending: true });
 
-      if (error) throw error;
-      setMatches(data || []);
+      if (matchesError) throw matchesError;
+
+      // Obtener información de participación del usuario
+      const { data: participantsData, error: participantsError } = await supabase
+        .from('match_participants')
+        .select('match_id')
+        .eq('user_id', user.id);
+
+      if (participantsError) throw participantsError;
+
+      const userParticipatingMatches = new Set(
+        participantsData?.map(p => p.match_id) || []
+      );
+
+      // Combinar la información
+      const enrichedMatches = matchesData?.map(match => ({
+        ...match,
+        is_creator: match.creator_id === user.id,
+        is_participant: userParticipatingMatches.has(match.id)
+      })) || [];
+
+      setMatches(enrichedMatches);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar partidos');
     } finally {
@@ -72,7 +96,8 @@ export const useMatches = () => {
             sport_type: matchData.sport_type.toLowerCase(),
             max_players: matchData.max_players,
             price: matchData.price,
-            creator_id: user.id
+            creator_id: user.id,
+            current_players: 1 // El creador ocupa una plaza
           }
         ])
         .select()
@@ -80,6 +105,15 @@ export const useMatches = () => {
 
       if (error) throw error;
       
+      // Agregar al creador como participante automáticamente
+      const { error: participantError } = await supabase
+        .from('match_participants')
+        .insert([
+          { match_id: data.id, user_id: user.id }
+        ]);
+
+      if (participantError) throw participantError;
+
       // Actualizar la lista de partidos inmediatamente
       await fetchMatches();
       return { data, error: null };
@@ -128,6 +162,38 @@ export const useMatches = () => {
     }
   };
 
+  const getMatchById = async (matchId: string) => {
+    if (!user) return { data: null, error: 'Usuario no autenticado' };
+
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('id', matchId)
+        .single();
+
+      if (error) throw error;
+
+      // Verificar si el usuario es participante
+      const { data: participantData } = await supabase
+        .from('match_participants')
+        .select('match_id')
+        .eq('match_id', matchId)
+        .eq('user_id', user.id)
+        .single();
+
+      const enrichedMatch = {
+        ...data,
+        is_creator: data.creator_id === user.id,
+        is_participant: !!participantData
+      };
+
+      return { data: enrichedMatch, error: null };
+    } catch (err) {
+      return { data: null, error: err instanceof Error ? err.message : 'Error al obtener el partido' };
+    }
+  };
+
   useEffect(() => {
     fetchMatches();
   }, [user]);
@@ -139,6 +205,7 @@ export const useMatches = () => {
     refetch: fetchMatches,
     createMatch,
     joinMatch,
-    leaveMatch
+    leaveMatch,
+    getMatchById
   };
 };

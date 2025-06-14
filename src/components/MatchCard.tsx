@@ -7,7 +7,7 @@ import { MapPin, Clock, Users, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Match {
-  id: number;
+  id: number | string;
   sport: string;
   title: string;
   location: string;
@@ -18,11 +18,13 @@ interface Match {
   organizer?: string;
   distance?: string;
   status?: string;
+  is_creator?: boolean;
+  is_participant?: boolean;
 }
 
 interface MatchCardProps {
   match: Match;
-  type: 'recommended' | 'upcoming' | 'joined';
+  type: 'recommended' | 'upcoming' | 'joined' | 'created';
 }
 
 const MatchCard = ({ match, type }: MatchCardProps) => {
@@ -34,6 +36,8 @@ const MatchCard = ({ match, type }: MatchCardProps) => {
       'Tenis': 'bg-yellow-100 text-yellow-800',
       'Pádel': 'bg-purple-100 text-purple-800',
       'Voleibol': 'bg-orange-100 text-orange-800',
+      'Baloncesto': 'bg-red-100 text-red-800',
+      'Bádminton': 'bg-blue-100 text-blue-800',
     };
     return colors[sport] || 'bg-gray-100 text-gray-800';
   };
@@ -53,8 +57,23 @@ const MatchCard = ({ match, type }: MatchCardProps) => {
 
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevenir que se ejecute el click del card
-    // Aquí iría la lógica específica del botón
-    console.log(`Botón presionado para partido ${match.id}`);
+    navigate(`/match/${match.id}`);
+  };
+
+  const getButtonText = () => {
+    if (type === 'recommended') return 'Unirse';
+    if (type === 'upcoming' && match.is_creator) return 'Gestionar';
+    if (type === 'upcoming' && match.is_participant) return 'Ver detalles';
+    if (type === 'created') return 'Gestionar';
+    if (type === 'joined') return 'Ver detalles';
+    return 'Ver detalles';
+  };
+
+  const getButtonColor = () => {
+    if (type === 'recommended') return 'bg-blue-600 hover:bg-blue-700';
+    if (type === 'upcoming' && match.is_creator) return 'bg-green-600 hover:bg-green-700';
+    if (type === 'created') return 'bg-green-600 hover:bg-green-700';
+    return 'bg-gray-600 hover:bg-gray-700';
   };
 
   return (
@@ -72,6 +91,11 @@ const MatchCard = ({ match, type }: MatchCardProps) => {
               {match.distance && (
                 <Badge variant="outline" className="text-xs">
                   {match.distance}
+                </Badge>
+              )}
+              {match.is_creator && (
+                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                  Organizador
                 </Badge>
               )}
             </div>
@@ -107,7 +131,7 @@ const MatchCard = ({ match, type }: MatchCardProps) => {
         </div>
 
         <div className="flex justify-between items-center">
-          {match.organizer && (
+          {match.organizer && !match.is_creator && (
             <div className="flex items-center space-x-2">
               <Avatar className="h-6 w-6">
                 <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
@@ -121,16 +145,9 @@ const MatchCard = ({ match, type }: MatchCardProps) => {
           <Button 
             size="sm" 
             onClick={handleButtonClick}
-            className={`ml-auto ${
-              type === 'recommended' 
-                ? 'bg-blue-600 hover:bg-blue-700' 
-                : type === 'upcoming'
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-gray-600 hover:bg-gray-700'
-            }`}
+            className={`ml-auto ${getButtonColor()}`}
           >
-            {type === 'recommended' ? 'Unirse' : 
-             type === 'upcoming' ? 'Confirmado' : 'Ver detalles'}
+            {getButtonText()}
           </Button>
         </div>
       </CardContent>

@@ -53,7 +53,10 @@ const Index = () => {
       id: match.id,
       sport: match.sport_type === 'football' ? 'Fútbol' : 
              match.sport_type === 'tennis' ? 'Tenis' :
-             match.sport_type === 'padel' ? 'Pádel' : 'Voleibol',
+             match.sport_type === 'padel' ? 'Pádel' : 
+             match.sport_type === 'volleyball' ? 'Voleibol' :
+             match.sport_type === 'basketball' ? 'Baloncesto' :
+             match.sport_type === 'badminton' ? 'Bádminton' : 'Deporte',
       title: match.title,
       location: match.location,
       date: new Date(match.date).toISOString().split('T')[0],
@@ -61,12 +64,18 @@ const Index = () => {
       players: `${match.current_players}/${match.max_players}`,
       price: match.price > 0 ? `€${match.price}` : 'Gratis',
       organizer: 'Usuario',
-      distance: '0.5 km'
+      distance: '0.5 km',
+      is_creator: match.is_creator,
+      is_participant: match.is_participant
     }));
   };
 
-  const recommendedMatches = convertMatches(matches);
-  const upcomingMatches = []; // Aquí se pueden filtrar los partidos donde el usuario está inscrito
+  // Separar partidos según la participación del usuario
+  const userMatches = matches.filter(match => match.is_creator || match.is_participant);
+  const availableMatches = matches.filter(match => !match.is_creator && !match.is_participant);
+
+  const upcomingMatches = convertMatches(userMatches);
+  const recommendedMatches = convertMatches(availableMatches);
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -158,20 +167,40 @@ const Index = () => {
       {/* Content */}
       <div className="space-y-3">
         {activeTab === 'created' ? (
-          <div className="text-center py-12">
-            <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No has creado partidos</h3>
-            <p className="text-gray-600 mb-4">¡Organiza tu primer partido!</p>
-            <Button onClick={() => setShowCreateMatch(true)} className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Crear partido
-            </Button>
+          <div>
+            {upcomingMatches.filter(match => match.is_creator).length > 0 ? (
+              upcomingMatches
+                .filter(match => match.is_creator)
+                .map((match) => (
+                  <MatchCard key={match.id} match={match} type="created" />
+                ))
+            ) : (
+              <div className="text-center py-12">
+                <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No has creado partidos</h3>
+                <p className="text-gray-600 mb-4">¡Organiza tu primer partido!</p>
+                <Button onClick={() => setShowCreateMatch(true)} className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear partido
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
-            {upcomingMatches.map((match) => (
-              <MatchCard key={match.id} match={match} type="joined" />
-            ))}
+            {upcomingMatches.filter(match => !match.is_creator && match.is_participant).length > 0 ? (
+              upcomingMatches
+                .filter(match => !match.is_creator && match.is_participant)
+                .map((match) => (
+                  <MatchCard key={match.id} match={match} type="joined" />
+                ))
+            ) : (
+              <div className="text-center py-12">
+                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No te has unido a partidos</h3>
+                <p className="text-gray-600">¡Únete a tu primer partido!</p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -224,14 +253,14 @@ const Index = () => {
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">0</div>
+            <div className="text-2xl font-bold text-blue-600">{upcomingMatches.length}</div>
             <div className="text-sm text-gray-600">Partidos jugados</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">0</div>
-            <div className="text-sm text-gray-600">Partidos ganados</div>
+            <div className="text-2xl font-bold text-green-600">{upcomingMatches.filter(m => m.is_creator).length}</div>
+            <div className="text-sm text-gray-600">Partidos organizados</div>
           </CardContent>
         </Card>
       </div>
