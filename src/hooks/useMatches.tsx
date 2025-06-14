@@ -166,13 +166,20 @@ export const useMatches = () => {
     if (!user) return { data: null, error: 'Usuario no autenticado' };
 
     try {
+      console.log('Obteniendo detalles del partido:', matchId);
+      
       const { data, error } = await supabase
         .from('matches')
         .select('*')
         .eq('id', matchId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error al obtener partido:', error);
+        throw error;
+      }
+
+      console.log('Datos del partido obtenidos:', data);
 
       // Verificar si el usuario es participante
       const { data: participantData } = await supabase
@@ -182,30 +189,60 @@ export const useMatches = () => {
         .eq('user_id', user.id)
         .single();
 
+      console.log('¿Es participante?', !!participantData);
+
       // Obtener información de todos los participantes
       const { data: participantsData, error: participantsError } = await supabase
         .from('match_participants')
-        .select(`
-          user_id,
-          joined_at,
-          profiles:user_id (
-            full_name,
-            email
-          )
-        `)
+        .select('user_id, joined_at')
         .eq('match_id', matchId);
 
-      if (participantsError) throw participantsError;
+      if (participantsError) {
+        console.error('Error al obtener participantes:', participantsError);
+        throw participantsError;
+      }
+
+      console.log('Participantes obtenidos:', participantsData);
+
+      // Obtener perfiles de los participantes por separado
+      let participantsWithProfiles = [];
+      if (participantsData && participantsData.length > 0) {
+        const userIds = participantsData.map(p => p.user_id);
+        
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.error('Error al obtener perfiles:', profilesError);
+        }
+
+        console.log('Perfiles obtenidos:', profilesData);
+
+        // Combinar participantes con sus perfiles
+        participantsWithProfiles = participantsData.map(participant => {
+          const profile = profilesData?.find(p => p.id === participant.user_id);
+          return {
+            user_id: participant.user_id,
+            joined_at: participant.joined_at,
+            profiles: profile || null
+          };
+        });
+      }
 
       const enrichedMatch = {
         ...data,
         is_creator: data.creator_id === user.id,
         is_participant: !!participantData,
-        participants: participantsData || []
+        participants: participantsWithProfiles
       };
+
+      console.log('Match enriquecido:', enrichedMatch);
 
       return { data: enrichedMatch, error: null };
     } catch (err) {
+      console.error('Error completo en getMatchById:', err);
       return { data: null, error: err instanceof Error ? err.message : 'Error al obtener el partido' };
     }
   };
