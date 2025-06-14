@@ -9,7 +9,110 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      match_participants: {
+        Row: {
+          id: string
+          joined_at: string
+          match_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          match_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          match_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_participants_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          created_at: string
+          creator_id: string
+          current_players: number
+          date: string
+          description: string | null
+          id: string
+          location: string
+          max_players: number
+          price: number | null
+          sport_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          current_players?: number
+          date: string
+          description?: string | null
+          id?: string
+          location: string
+          max_players?: number
+          price?: number | null
+          sport_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          current_players?: number
+          date?: string
+          description?: string | null
+          id?: string
+          location?: string
+          max_players?: number
+          price?: number | null
+          sport_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

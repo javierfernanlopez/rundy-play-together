@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,75 +13,69 @@ import {
   Clock, 
   Users,
   Search,
-  Filter
+  Filter,
+  LogOut
 } from 'lucide-react';
 import CreateMatchDialog from '@/components/CreateMatchDialog';
 import MatchCard from '@/components/MatchCard';
 import NavigationBar from '@/components/NavigationBar';
 import FloatingActionButton from '@/components/FloatingActionButton';
+import { useAuth } from '@/hooks/useAuth';
+import { useMatches } from '@/hooks/useMatches';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showCreateMatch, setShowCreateMatch] = useState(false);
+  const { user, signOut } = useAuth();
+  const { matches, loading } = useMatches();
+  const { toast } = useToast();
 
-  const recommendedMatches = [
-    {
-      id: 1,
-      sport: 'Fútbol',
-      title: 'Partido amistoso',
-      location: 'Parque Central',
-      date: '2024-06-15',
-      time: '18:00',
-      players: '6/10',
-      price: 'Gratis',
-      organizer: 'Carlos M.',
-      distance: '0.8 km'
-    },
-    {
-      id: 2,
-      sport: 'Tenis',
-      title: 'Singles competitivo',
-      location: 'Club Deportivo',
-      date: '2024-06-16',
-      time: '19:30',
-      players: '1/2',
-      price: '€15',
-      organizer: 'Ana L.',
-      distance: '1.2 km'
-    },
-    {
-      id: 3,
-      sport: 'Pádel',
-      title: 'Dobles principiantes',
-      location: 'Centro Pádel Sur',
-      date: '2024-06-17',
-      time: '20:00',
-      players: '2/4',
-      price: '€12',
-      organizer: 'Miguel R.',
-      distance: '2.1 km'
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión exitosamente",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error al cerrar sesión",
+        variant: "destructive",
+      });
     }
-  ];
+  };
 
-  const upcomingMatches = [
-    {
-      id: 4,
-      sport: 'Voleibol',
-      title: 'Torneo local',
-      location: 'Polideportivo Norte',
-      date: '2024-06-18',
-      time: '17:00',
-      players: '8/12',
-      status: 'confirmed'
-    }
-  ];
+  // Convert matches to the format expected by MatchCard
+  const convertMatches = (matches: any[]) => {
+    return matches.map(match => ({
+      id: match.id,
+      sport: match.sport_type === 'football' ? 'Fútbol' : 
+             match.sport_type === 'tennis' ? 'Tenis' :
+             match.sport_type === 'padel' ? 'Pádel' : 'Voleibol',
+      title: match.title,
+      location: match.location,
+      date: new Date(match.date).toISOString().split('T')[0],
+      time: new Date(match.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      players: `${match.current_players}/${match.max_players}`,
+      price: match.price > 0 ? `€${match.price}` : 'Gratis',
+      organizer: 'Usuario',
+      distance: '0.5 km'
+    }));
+  };
+
+  const recommendedMatches = convertMatches(matches);
+  const upcomingMatches = []; // Aquí se pueden filtrar los partidos donde el usuario está inscrito
 
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">¡Hola, Alex!</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            ¡Hola, {user?.user_metadata?.full_name || user?.email?.split('@')[0]}!
+          </h1>
           <p className="text-gray-600">Encuentra tu próximo partido</p>
         </div>
         <div className="flex space-x-2">
@@ -92,23 +85,50 @@ const Index = () => {
           <Button variant="ghost" size="icon" className="hover:bg-blue-50">
             <Filter className="h-5 w-5 text-gray-600" />
           </Button>
+          <Button variant="ghost" size="icon" onClick={handleLogout} className="hover:bg-red-50">
+            <LogOut className="h-5 w-5 text-red-600" />
+          </Button>
         </div>
       </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando partidos...</p>
+        </div>
+      )}
 
       {/* Upcoming Matches */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold text-gray-900">Mis próximos partidos</h2>
-        {upcomingMatches.map((match) => (
-          <MatchCard key={match.id} match={match} type="upcoming" />
-        ))}
+        {upcomingMatches.length > 0 ? (
+          upcomingMatches.map((match) => (
+            <MatchCard key={match.id} match={match} type="upcoming" />
+          ))
+        ) : (
+          <Card className="p-6 text-center">
+            <p className="text-gray-500">No tienes partidos programados</p>
+          </Card>
+        )}
       </div>
 
       {/* Recommended Matches */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-gray-900">Recomendados para ti</h2>
-        {recommendedMatches.map((match) => (
-          <MatchCard key={match.id} match={match} type="recommended" />
-        ))}
+        <h2 className="text-lg font-semibold text-gray-900">Partidos disponibles</h2>
+        {!loading && recommendedMatches.length > 0 ? (
+          recommendedMatches.map((match) => (
+            <MatchCard key={match.id} match={match} type="recommended" />
+          ))
+        ) : !loading ? (
+          <Card className="p-6 text-center">
+            <p className="text-gray-500">No hay partidos disponibles</p>
+            <Button onClick={() => setShowCreateMatch(true)} className="mt-4 bg-blue-600 hover:bg-blue-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Crear el primer partido
+            </Button>
+          </Card>
+        ) : null}
       </div>
     </div>
   );
@@ -168,11 +188,16 @@ const Index = () => {
           <div className="flex items-center space-x-4">
             <Avatar className="h-20 w-20 ring-4 ring-white shadow-lg">
               <AvatarImage src="/api/placeholder/80/80" />
-              <AvatarFallback className="bg-blue-600 text-white text-xl">AM</AvatarFallback>
+              <AvatarFallback className="bg-blue-600 text-white text-xl">
+                {user?.user_metadata?.full_name?.split(' ').map((n: string) => n[0]).join('') || 
+                 user?.email?.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Alex Martínez</h2>
-              <p className="text-gray-600">alex.martinez@email.com</p>
+              <h2 className="text-xl font-bold text-gray-900">
+                {user?.user_metadata?.full_name || 'Usuario'}
+              </h2>
+              <p className="text-gray-600">{user?.email}</p>
               <Badge variant="secondary" className="mt-2">Nivel Intermedio</Badge>
             </div>
           </div>
@@ -199,13 +224,13 @@ const Index = () => {
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">15</div>
+            <div className="text-2xl font-bold text-blue-600">0</div>
             <div className="text-sm text-gray-600">Partidos jugados</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">12</div>
+            <div className="text-2xl font-bold text-green-600">0</div>
             <div className="text-sm text-gray-600">Partidos ganados</div>
           </CardContent>
         </Card>
@@ -220,6 +245,14 @@ const Index = () => {
         <Button variant="outline" className="w-full justify-start">
           <Trophy className="h-4 w-4 mr-2" />
           Deportes favoritos
+        </Button>
+        <Button 
+          variant="outline" 
+          className="w-full justify-start text-red-600 hover:text-red-700"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Cerrar sesión
         </Button>
       </div>
     </div>
