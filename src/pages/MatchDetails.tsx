@@ -5,6 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { 
   ArrowLeft, 
   MapPin, 
   Clock, 
@@ -12,7 +22,8 @@ import {
   Calendar,
   Euro,
   MessageCircle,
-  Share2
+  Share2,
+  Trash2
 } from 'lucide-react';
 import { useMatches } from '@/hooks/useMatches';
 import { useToast } from '@/hooks/use-toast';
@@ -20,11 +31,12 @@ import { useToast } from '@/hooks/use-toast';
 const MatchDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getMatchById, joinMatch, leaveMatch } = useMatches();
+  const { getMatchById, joinMatch, leaveMatch, deleteMatch } = useMatches();
   const { toast } = useToast();
   const [match, setMatch] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -98,6 +110,30 @@ const MatchDetails = () => {
     }
     
     setActionLoading(false);
+  };
+
+  const handleDeleteMatch = async () => {
+    if (!match) return;
+    
+    setActionLoading(true);
+    const { error } = await deleteMatch(match.id);
+    
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Partido eliminado",
+        description: "El partido ha sido eliminado exitosamente",
+      });
+      navigate('/');
+    }
+    
+    setActionLoading(false);
+    setShowDeleteDialog(false);
   };
 
   const getSportColor = (sport: string) => {
@@ -185,16 +221,28 @@ const MatchDetails = () => {
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate(-1)}
-            className="mr-3"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-semibold text-gray-900">Detalles del partido</h1>
+        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate(-1)}
+              className="mr-3"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-semibold text-gray-900">Detalles del partido</h1>
+          </div>
+          {match.is_creator && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setShowDeleteDialog(true)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -366,6 +414,28 @@ const MatchDetails = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar partido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El partido será eliminado permanentemente y todos los participantes serán notificados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteMatch}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={actionLoading}
+            >
+              {actionLoading ? 'Eliminando...' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

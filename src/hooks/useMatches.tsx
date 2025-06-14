@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -162,6 +161,35 @@ export const useMatches = () => {
     }
   };
 
+  const deleteMatch = async (matchId: string) => {
+    if (!user) return { error: 'Usuario no autenticado' };
+
+    try {
+      // Primero eliminar todos los participantes del partido
+      const { error: participantsError } = await supabase
+        .from('match_participants')
+        .delete()
+        .eq('match_id', matchId);
+
+      if (participantsError) throw participantsError;
+
+      // Luego eliminar el partido
+      const { error } = await supabase
+        .from('matches')
+        .delete()
+        .eq('id', matchId)
+        .eq('creator_id', user.id); // Solo el creador puede eliminar
+
+      if (error) throw error;
+      
+      // Actualizar la lista de partidos
+      await fetchMatches();
+      return { error: null };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'Error al eliminar el partido' };
+    }
+  };
+
   const getMatchById = async (matchId: string) => {
     if (!user) return { data: null, error: 'Usuario no autenticado' };
 
@@ -259,6 +287,7 @@ export const useMatches = () => {
     createMatch,
     joinMatch,
     leaveMatch,
+    deleteMatch,
     getMatchById
   };
 };
