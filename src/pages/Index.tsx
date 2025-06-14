@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Home, 
   Calendar, 
@@ -77,6 +78,10 @@ const Index = () => {
   const upcomingMatches = convertMatches(userMatches);
   const recommendedMatches = convertMatches(availableMatches);
 
+  // Filtrar partidos para las pestañas
+  const createdMatches = upcomingMatches.filter(match => match.is_creator);
+  const joinedMatches = upcomingMatches.filter(match => !match.is_creator && match.is_participant);
+
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Header */}
@@ -147,63 +152,44 @@ const Index = () => {
       <h1 className="text-2xl font-bold text-gray-900">Mis partidos</h1>
       
       {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-        <Button 
-          variant={activeTab === 'created' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('created')}
-          className="flex-1 rounded-md"
-        >
-          Creados
-        </Button>
-        <Button 
-          variant={activeTab === 'joined' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('joined')}
-          className="flex-1 rounded-md"
-        >
-          Unidos
-        </Button>
-      </div>
-
-      {/* Content */}
-      <div className="space-y-3">
-        {activeTab === 'created' ? (
-          <div>
-            {upcomingMatches.filter(match => match.is_creator).length > 0 ? (
-              upcomingMatches
-                .filter(match => match.is_creator)
-                .map((match) => (
-                  <MatchCard key={match.id} match={match} type="created" />
-                ))
-            ) : (
-              <div className="text-center py-12">
-                <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No has creado partidos</h3>
-                <p className="text-gray-600 mb-4">¡Organiza tu primer partido!</p>
-                <Button onClick={() => setShowCreateMatch(true)} className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Crear partido
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {upcomingMatches.filter(match => !match.is_creator && match.is_participant).length > 0 ? (
-              upcomingMatches
-                .filter(match => !match.is_creator && match.is_participant)
-                .map((match) => (
-                  <MatchCard key={match.id} match={match} type="joined" />
-                ))
-            ) : (
-              <div className="text-center py-12">
-                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No te has unido a partidos</h3>
-                <p className="text-gray-600">¡Únete a tu primer partido!</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <Tabs defaultValue="created" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="created">Creados</TabsTrigger>
+          <TabsTrigger value="joined">Unidos</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="created" className="space-y-3 mt-6">
+          {createdMatches.length > 0 ? (
+            createdMatches.map((match) => (
+              <MatchCard key={match.id} match={match} type="created" />
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No has creado partidos</h3>
+              <p className="text-gray-600 mb-4">¡Organiza tu primer partido!</p>
+              <Button onClick={() => setShowCreateMatch(true)} className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Crear partido
+              </Button>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="joined" className="space-y-3 mt-6">
+          {joinedMatches.length > 0 ? (
+            joinedMatches.map((match) => (
+              <MatchCard key={match.id} match={match} type="joined" />
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No te has unido a partidos</h3>
+              <p className="text-gray-600">¡Únete a tu primer partido!</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 
