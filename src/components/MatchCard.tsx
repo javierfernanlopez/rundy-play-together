@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { MapPin, Clock, Users, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Match {
   id: number;
@@ -25,6 +26,8 @@ interface MatchCardProps {
 }
 
 const MatchCard = ({ match, type }: MatchCardProps) => {
+  const navigate = useNavigate();
+
   const getSportColor = (sport: string) => {
     const colors: { [key: string]: string } = {
       'Fútbol': 'bg-green-100 text-green-800',
@@ -44,8 +47,21 @@ const MatchCard = ({ match, type }: MatchCardProps) => {
     });
   };
 
+  const handleCardClick = () => {
+    navigate(`/match/${match.id}`);
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevenir que se ejecute el click del card
+    // Aquí iría la lógica específica del botón
+    console.log(`Botón presionado para partido ${match.id}`);
+  };
+
   return (
-    <Card className="hover:shadow-lg transition-all duration-300 border-0 shadow-md hover:scale-[1.02]">
+    <Card 
+      className="hover:shadow-lg transition-all duration-300 border-0 shadow-md hover:scale-[1.02] cursor-pointer"
+      onClick={handleCardClick}
+    >
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1">
@@ -104,6 +120,7 @@ const MatchCard = ({ match, type }: MatchCardProps) => {
           
           <Button 
             size="sm" 
+            onClick={handleButtonClick}
             className={`ml-auto ${
               type === 'recommended' 
                 ? 'bg-blue-600 hover:bg-blue-700' 
