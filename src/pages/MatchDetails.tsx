@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
@@ -140,6 +139,21 @@ const MatchDetails = () => {
     return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const getParticipantName = (participant: any) => {
+    if (participant.profiles?.full_name) {
+      return participant.profiles.full_name;
+    }
+    if (participant.profiles?.email) {
+      return participant.profiles.email.split('@')[0];
+    }
+    return 'Usuario';
+  };
+
+  const getParticipantInitials = (participant: any) => {
+    const name = getParticipantName(participant);
+    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -262,6 +276,40 @@ const MatchDetails = () => {
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Contactar organizador
               </Button>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Participants Card */}
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg">
+              Participantes ({match.participants?.length || 0}/{match.max_players})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {match.participants && match.participants.length > 0 ? (
+              <div className="space-y-3">
+                {match.participants.map((participant: any, index: number) => (
+                  <div key={participant.user_id} className="flex items-center space-x-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-blue-100 text-blue-700">
+                        {getParticipantInitials(participant)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="font-medium">{getParticipantName(participant)}</div>
+                      <div className="text-sm text-gray-600">
+                        {participant.user_id === match.creator_id ? 'Organizador' : 'Participante'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600 text-center py-4">
+                Aún no hay participantes registrados
+              </p>
             )}
           </CardContent>
         </Card>

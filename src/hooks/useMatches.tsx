@@ -182,10 +182,26 @@ export const useMatches = () => {
         .eq('user_id', user.id)
         .single();
 
+      // Obtener información de todos los participantes
+      const { data: participantsData, error: participantsError } = await supabase
+        .from('match_participants')
+        .select(`
+          user_id,
+          joined_at,
+          profiles:user_id (
+            full_name,
+            email
+          )
+        `)
+        .eq('match_id', matchId);
+
+      if (participantsError) throw participantsError;
+
       const enrichedMatch = {
         ...data,
         is_creator: data.creator_id === user.id,
-        is_participant: !!participantData
+        is_participant: !!participantData,
+        participants: participantsData || []
       };
 
       return { data: enrichedMatch, error: null };
