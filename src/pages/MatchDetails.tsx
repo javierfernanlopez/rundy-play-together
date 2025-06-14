@@ -59,7 +59,7 @@ const MatchDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center">
@@ -175,11 +175,15 @@ const MatchDetails = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Action Button */}
-        <Button className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-lg font-medium">
-          Unirse al partido
-        </Button>
+      {/* Floating Action Button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+        <div className="max-w-md mx-auto">
+          <Button className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-lg font-medium shadow-lg">
+            Unirse al partido
+          </Button>
+        </div>
       </div>
     </div>
   );
