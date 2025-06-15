@@ -123,6 +123,15 @@ const MatchDetails = () => {
     setShowDeleteDialog(false);
   };
 
+  const handleBack = () => {
+    // Go back if there's history, otherwise go to home page
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate('/', { replace: true });
+    }
+  };
+
   const getSportColor = (sport: string) => {
     const colors: {
       [key: string]: string;
@@ -241,7 +250,7 @@ const MatchDetails = () => {
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-3">
+            <Button variant="ghost" size="icon" onClick={handleBack} className="mr-3">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-lg font-semibold text-gray-900">Detalles del partido</h1>
