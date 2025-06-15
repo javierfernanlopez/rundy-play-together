@@ -116,8 +116,7 @@ export const useMatches = () => {
             max_players: matchData.max_players,
             price: matchData.price,
             creator_id: user.id,
-            current_players: 1 // El creador ocupa una plaza
-          }
+          },
         ])
         .select()
         .single();
@@ -125,6 +124,7 @@ export const useMatches = () => {
       if (error) throw error;
       
       // Agregar al creador como participante automáticamente
+      // Esto disparará el trigger que incrementa current_players
       const { error: participantError } = await supabase
         .from('match_participants')
         .insert([
