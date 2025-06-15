@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ArrowLeft, MapPin, Clock, Users, Calendar, Euro, MessageCircle, Share2, Trash2 } from 'lucide-react';
 import { useMatches } from '@/hooks/useMatches';
 import { useToast } from '@/hooks/use-toast';
+import MatchChat from '@/components/MatchChat';
 
 const MatchDetails = () => {
   const {
@@ -368,6 +369,11 @@ const MatchDetails = () => {
               <p className="text-gray-700">{match.description}</p>
             </CardContent>
           </Card>}
+        
+        {/* Chat Card */}
+        {(match.is_participant || match.is_creator) && match.id && (
+          <MatchChat matchId={match.id} />
+        )}
       </div>
 
       {/* Floating Action Button */}
