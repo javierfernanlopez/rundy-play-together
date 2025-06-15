@@ -20,6 +20,10 @@ interface Match {
   status?: string;
   is_creator?: boolean;
   is_participant?: boolean;
+  creator_profile?: {
+    full_name?: string;
+    email?: string;
+  };
 }
 
 interface MatchCardProps {
@@ -74,6 +78,24 @@ const MatchCard = ({ match, type }: MatchCardProps) => {
     if (type === 'upcoming' && match.is_creator) return 'bg-green-600 hover:bg-green-700';
     if (type === 'created') return 'bg-green-600 hover:bg-green-700';
     return 'bg-gray-600 hover:bg-gray-700';
+  };
+
+  const getCreatorName = () => {
+    if (match.creator_profile?.full_name) {
+      return match.creator_profile.full_name;
+    }
+    if (match.creator_profile?.email) {
+      return match.creator_profile.email.split('@')[0];
+    }
+    if (match.organizer) {
+      return match.organizer;
+    }
+    return 'Organizador';
+  };
+
+  const getCreatorInitials = () => {
+    const name = getCreatorName();
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
   return (
@@ -131,14 +153,14 @@ const MatchCard = ({ match, type }: MatchCardProps) => {
         </div>
 
         <div className="flex justify-between items-center">
-          {match.organizer && !match.is_creator && (
+          {!match.is_creator && (
             <div className="flex items-center space-x-2">
               <Avatar className="h-6 w-6">
                 <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
-                  {match.organizer.split(' ').map(n => n[0]).join('')}
+                  {getCreatorInitials()}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm text-gray-600">{match.organizer}</span>
+              <span className="text-sm text-gray-600">{getCreatorName()}</span>
             </div>
           )}
           

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -17,6 +18,10 @@ export interface Match {
   updated_at: string;
   is_creator?: boolean;
   is_participant?: boolean;
+  creator_profile?: {
+    full_name?: string;
+    email?: string;
+  };
 }
 
 export const useMatches = () => {
@@ -31,10 +36,13 @@ export const useMatches = () => {
     try {
       setLoading(true);
       
-      // Obtener partidos con información de participación
+      // Obtener partidos con información del creador
       const { data: matchesData, error: matchesError } = await supabase
         .from('matches')
-        .select('*')
+        .select(`
+          *,
+          creator_profile:profiles!matches_creator_id_fkey(full_name, email)
+        `)
         .order('date', { ascending: true });
 
       if (matchesError) throw matchesError;
@@ -198,7 +206,10 @@ export const useMatches = () => {
       
       const { data, error } = await supabase
         .from('matches')
-        .select('*')
+        .select(`
+          *,
+          creator_profile:profiles!matches_creator_id_fkey(full_name, email)
+        `)
         .eq('id', matchId)
         .single();
 

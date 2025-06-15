@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ArrowLeft, MapPin, Clock, Users, Calendar, Euro, MessageCircle, Share2, Trash2 } from 'lucide-react';
 import { useMatches } from '@/hooks/useMatches';
 import { useToast } from '@/hooks/use-toast';
+
 const MatchDetails = () => {
   const {
     id
@@ -26,11 +27,13 @@ const MatchDetails = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
   useEffect(() => {
     if (id) {
       loadMatchDetails();
     }
   }, [id]);
+
   const loadMatchDetails = async () => {
     if (!id) return;
     setLoading(true);
@@ -50,6 +53,7 @@ const MatchDetails = () => {
     setMatch(data);
     setLoading(false);
   };
+
   const handleJoinMatch = async () => {
     if (!match) return;
     setActionLoading(true);
@@ -72,6 +76,7 @@ const MatchDetails = () => {
     }
     setActionLoading(false);
   };
+
   const handleLeaveMatch = async () => {
     if (!match) return;
     setActionLoading(true);
@@ -94,6 +99,7 @@ const MatchDetails = () => {
     }
     setActionLoading(false);
   };
+
   const handleDeleteMatch = async () => {
     if (!match) return;
     setActionLoading(true);
@@ -116,6 +122,7 @@ const MatchDetails = () => {
     setActionLoading(false);
     setShowDeleteDialog(false);
   };
+
   const getSportColor = (sport: string) => {
     const colors: {
       [key: string]: string;
@@ -129,6 +136,7 @@ const MatchDetails = () => {
     };
     return colors[sport] || 'bg-gray-100 text-gray-800';
   };
+
   const getSportName = (sport: string) => {
     const names: {
       [key: string]: string;
@@ -142,6 +150,7 @@ const MatchDetails = () => {
     };
     return names[sport] || sport;
   };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
@@ -151,6 +160,7 @@ const MatchDetails = () => {
       year: 'numeric'
     });
   };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('es-ES', {
@@ -158,6 +168,7 @@ const MatchDetails = () => {
       minute: '2-digit'
     });
   };
+
   const getParticipantName = (participant: any) => {
     if (participant.profiles?.full_name) {
       return participant.profiles.full_name;
@@ -167,10 +178,27 @@ const MatchDetails = () => {
     }
     return 'Usuario';
   };
+
   const getParticipantInitials = (participant: any) => {
     const name = getParticipantName(participant);
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
   };
+
+  const getCreatorName = () => {
+    if (match?.creator_profile?.full_name) {
+      return match.creator_profile.full_name;
+    }
+    if (match?.creator_profile?.email) {
+      return match.creator_profile.email.split('@')[0];
+    }
+    return 'Organizador';
+  };
+
+  const getCreatorInitials = () => {
+    const name = getCreatorName();
+    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+  };
+
   if (loading) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -179,6 +207,7 @@ const MatchDetails = () => {
         </div>
       </div>;
   }
+
   if (!match) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -189,8 +218,10 @@ const MatchDetails = () => {
         </div>
       </div>;
   }
+
   const canJoin = !match.is_participant && !match.is_creator && match.current_players < match.max_players;
   const canLeave = match.is_participant && !match.is_creator;
+
   return <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
@@ -262,11 +293,11 @@ const MatchDetails = () => {
             <div className="flex items-center space-x-3 mb-4">
               <Avatar className="h-12 w-12">
                 <AvatarFallback className="bg-blue-100 text-blue-700">
-                  OR
+                  {getCreatorInitials()}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <div className="font-medium">Organizador</div>
+                <div className="font-medium">{getCreatorName()}</div>
                 {match.is_creator && <div className="text-sm text-blue-600">¡Eres tú!</div>}
               </div>
             </div>
@@ -353,4 +384,5 @@ const MatchDetails = () => {
       </AlertDialog>
     </div>;
 };
+
 export default MatchDetails;
