@@ -36,13 +36,10 @@ export const useMatches = () => {
     try {
       setLoading(true);
       
-      // Obtener partidos con información del creador
+      // Obtener partidos con información del creador usando un JOIN manual
       const { data: matchesData, error: matchesError } = await supabase
         .from('matches')
-        .select(`
-          *,
-          creator_profile:profiles!matches_creator_id_fkey(full_name, email)
-        `)
+        .select('*')
         .order('date', { ascending: true });
 
       if (matchesError) throw matchesError;
@@ -59,11 +56,26 @@ export const useMatches = () => {
         participantsData?.map(p => p.match_id) || []
       );
 
+      // Obtener perfiles de los creadores
+      const creatorIds = [...new Set(matchesData?.map(match => match.creator_id) || [])];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', creatorIds);
+
+      if (profilesError) throw profilesError;
+
+      // Crear un mapa de perfiles por ID para acceso rápido
+      const profilesMap = new Map(
+        profilesData?.map(profile => [profile.id, profile]) || []
+      );
+
       // Combinar la información
       const enrichedMatches = matchesData?.map(match => ({
         ...match,
         is_creator: match.creator_id === user.id,
-        is_participant: userParticipatingMatches.has(match.id)
+        is_participant: userParticipatingMatches.has(match.id),
+        creator_profile: profilesMap.get(match.creator_id) || null
       })) || [];
 
       setMatches(enrichedMatches);
@@ -206,10 +218,7 @@ export const useMatches = () => {
       
       const { data, error } = await supabase
         .from('matches')
-        .select(`
-          *,
-          creator_profile:profiles!matches_creator_id_fkey(full_name, email)
-        `)
+        .select('*')
         .eq('id', matchId)
         .single();
 
@@ -219,6 +228,17 @@ export const useMatches = () => {
       }
 
       console.log('Datos del partido obtenidos:', data);
+
+      // Obtener el perfil del creador
+      const { data: creatorProfile, error: creatorProfileError } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', data.creator_id)
+        .single();
+
+      if (creatorProfileError) {
+        console.warn('No se pudo obtener el perfil del creador:', creatorProfileError);
+      }
 
       // Verificar si el usuario es participante
       const { data: participantData } = await supabase
@@ -274,6 +294,7 @@ export const useMatches = () => {
         ...data,
         is_creator: data.creator_id === user.id,
         is_participant: !!participantData,
+        creator_profile: creatorProfile || null,
         participants: participantsWithProfiles
       };
 
