@@ -170,18 +170,22 @@ const MatchDetails = () => {
   };
 
   const getParticipantName = (participant: any) => {
-    // Primero verificar si hay un perfil directo
+    // Prioritize full name from participant's own profile
     if (participant.profiles?.full_name) {
       return participant.profiles.full_name;
     }
+    
+    // If participant is creator, check for full name on creator_profile as a fallback
+    if (participant.user_id === match.creator_id && match.creator_profile?.full_name) {
+      return match.creator_profile.full_name;
+    }
+    
+    // If no full name, try email from participant's own profile
     if (participant.profiles?.email) {
       return participant.profiles.email.split('@')[0];
     }
     
-    // Si no hay perfil directo, verificar si es el creador
-    if (participant.user_id === match.creator_id && match.creator_profile?.full_name) {
-      return match.creator_profile.full_name;
-    }
+    // Finally, if participant is creator, try email from creator_profile
     if (participant.user_id === match.creator_id && match.creator_profile?.email) {
       return match.creator_profile.email.split('@')[0];
     }
