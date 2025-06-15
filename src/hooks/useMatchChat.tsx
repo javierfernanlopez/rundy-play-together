@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -15,9 +14,7 @@ export interface Message {
 
 interface Participant {
   user_id: string;
-  profiles: {
-    full_name: string | null;
-  } | null;
+  full_name: string | null;
 }
 
 export const useMatchChat = (matchId: string | undefined, participants: Participant[] = []) => {
@@ -27,7 +24,7 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
   const [error, setError] = useState<string | null>(null);
 
   const participantsMap = useMemo(() => 
-    new Map(participants.map(p => [p.user_id, p.profiles])),
+    new Map(participants.map(p => [p.user_id, p.full_name])),
     [participants]
   );
 
@@ -85,11 +82,11 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
     const channel = supabase.channel(`match-chat-${matchId}`);
 
     const handleNewMessage = (payload: any) => {
-        const profileInfo = participantsMap.get(payload.new.user_id);
+        const fullName = participantsMap.get(payload.new.user_id);
         
         const newMessage: Message = {
             ...payload.new,
-            profiles: profileInfo || { full_name: 'Usuario' }
+            profiles: { full_name: fullName || 'Usuario' }
         };
 
         setMessages(currentMessages => {

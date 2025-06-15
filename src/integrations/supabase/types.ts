@@ -50,18 +50,21 @@ export type Database = {
       }
       match_participants: {
         Row: {
+          full_name: string | null
           id: string
           joined_at: string
           match_id: string
           user_id: string
         }
         Insert: {
+          full_name?: string | null
           id?: string
           joined_at?: string
           match_id: string
           user_id: string
         }
         Update: {
+          full_name?: string | null
           id?: string
           joined_at?: string
           match_id?: string
