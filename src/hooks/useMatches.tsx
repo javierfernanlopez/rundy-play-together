@@ -22,6 +22,7 @@ export interface Match {
     full_name?: string;
     email?: string;
   };
+  participants?: any[];
 }
 
 export const useMatches = () => {
@@ -36,7 +37,6 @@ export const useMatches = () => {
     try {
       setLoading(true);
       
-      // Obtener partidos con información del creador usando un JOIN manual
       const { data: matchesData, error: matchesError } = await supabase
         .from('matches')
         .select('*')
@@ -44,7 +44,6 @@ export const useMatches = () => {
 
       if (matchesError) throw matchesError;
 
-      // Obtener información de participación del usuario
       const { data: participantsData, error: participantsError } = await supabase
         .from('match_participants')
         .select('match_id')
@@ -56,7 +55,28 @@ export const useMatches = () => {
         participantsData?.map(p => p.match_id) || []
       );
 
-      // Obtener perfiles de los creadores
+      const matchIds = matchesData?.map(match => match.id) || [];
+      let participantsByMatch: { [key: string]: any[] } = {};
+
+      if (matchIds.length > 0) {
+        const { data: allParticipants, error: allParticipantsError } = await supabase
+          .from('match_participants')
+          .select('match_id, user_id')
+          .in('match_id', matchIds);
+        
+        if (allParticipantsError) throw allParticipantsError;
+
+        if (allParticipants) {
+          participantsByMatch = allParticipants.reduce((acc: { [key:string]: any[] }, p) => {
+            if (!acc[p.match_id]) {
+              acc[p.match_id] = [];
+            }
+            acc[p.match_id].push(p);
+            return acc;
+          }, {});
+        }
+      }
+
       const creatorIds = [...new Set(matchesData?.map(match => match.creator_id) || [])];
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -65,17 +85,16 @@ export const useMatches = () => {
 
       if (profilesError) throw profilesError;
 
-      // Crear un mapa de perfiles por ID para acceso rápido
       const profilesMap = new Map(
         profilesData?.map(profile => [profile.id, profile]) || []
       );
 
-      // Combinar la información
       const enrichedMatches = matchesData?.map(match => ({
         ...match,
         is_creator: match.creator_id === user.id,
         is_participant: userParticipatingMatches.has(match.id),
-        creator_profile: profilesMap.get(match.creator_id) || null
+        creator_profile: profilesMap.get(match.creator_id) || null,
+        participants: participantsByMatch[match.id] || []
       })) || [];
 
       setMatches(enrichedMatches);

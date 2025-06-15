@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,12 +63,13 @@ const Index = () => {
       location: match.location,
       date: new Date(match.date).toISOString().split('T')[0],
       time: new Date(match.date).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-      players: `${match.current_players}/${match.max_players}`,
+      players: `${match.participants ? match.participants.length : match.current_players}/${match.max_players}`,
       price: match.price > 0 ? `€${match.price}` : 'Gratis',
       organizer: 'Usuario',
       distance: '0.5 km',
       is_creator: match.is_creator,
-      is_participant: match.is_participant
+      is_participant: match.is_participant,
+      creator_profile: match.creator_profile,
     }));
   };
 
