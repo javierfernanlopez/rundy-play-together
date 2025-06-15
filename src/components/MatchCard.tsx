@@ -14,6 +14,8 @@ interface Match {
   date: string;
   time: string;
   players: string;
+  current_players?: number;
+  max_players?: number;
   price?: string;
   organizer?: string;
   distance?: string;
@@ -142,7 +144,7 @@ const MatchCard = ({ match, type }: MatchCardProps) => {
           <div className="text-right">
             <div className="flex items-center text-sm text-gray-600 mb-2">
               <Users className="h-4 w-4 mr-1" />
-              {match.players}
+              {match.current_players !== undefined && match.max_players !== undefined ? `${match.current_players}/${match.max_players}` : match.players}
             </div>
             {match.price && (
               <div className="text-sm font-medium text-blue-600">
