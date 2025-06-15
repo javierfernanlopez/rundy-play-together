@@ -1,10 +1,10 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { 
   Home, 
   Calendar, 
@@ -29,6 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showCreateMatch, setShowCreateMatch] = useState(false);
+  const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const { user, signOut } = useAuth();
   const { matches, loading } = useMatches();
   const { toast } = useToast();
@@ -80,6 +81,12 @@ const Index = () => {
   const upcomingMatches = convertMatches(userMatches);
   const recommendedMatches = convertMatches(availableMatches);
 
+  // Lista de deportes y partidos recomendados filtrados
+  const sports = ['Fútbol', 'Tenis', 'Pádel', 'Voleibol', 'Baloncesto', 'Bádminton'];
+  const filteredRecommendedMatches = selectedSports.length > 0
+    ? recommendedMatches.filter(match => selectedSports.includes(match.sport))
+    : recommendedMatches;
+
   // Filtrar partidos para las pestañas
   const createdMatches = upcomingMatches.filter(match => match.is_creator);
   const joinedMatches = upcomingMatches.filter(match => !match.is_creator && match.is_participant);
@@ -107,6 +114,29 @@ const Index = () => {
         </div>
       </div>
 
+      {/* Sport Filters */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-medium text-gray-600 uppercase tracking-wider">Filtrar por deporte</h2>
+        <ToggleGroup
+          type="multiple"
+          variant="outline"
+          value={selectedSports}
+          onValueChange={setSelectedSports}
+          className="flex flex-wrap gap-2"
+        >
+          {sports.map((sport) => (
+            <ToggleGroupItem 
+              key={sport} 
+              value={sport} 
+              aria-label={`Toggle ${sport}`}
+              className="data-[state=on]:bg-blue-100 data-[state=on]:text-blue-800 border-gray-300 rounded-full px-4"
+            >
+              {sport}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
+      </div>
+
       {/* Loading State */}
       {loading && (
         <div className="text-center py-8">
@@ -132,13 +162,17 @@ const Index = () => {
       {/* Recommended Matches */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold text-gray-900">Partidos disponibles</h2>
-        {!loading && recommendedMatches.length > 0 ? (
-          recommendedMatches.map((match) => (
+        {!loading && filteredRecommendedMatches.length > 0 ? (
+          filteredRecommendedMatches.map((match) => (
             <MatchCard key={match.id} match={match} type="recommended" />
           ))
         ) : !loading ? (
           <Card className="p-6 text-center">
-            <p className="text-gray-500">No hay partidos disponibles</p>
+            <p className="text-gray-500">
+              {selectedSports.length > 0 
+                ? 'No hay partidos disponibles para los deportes seleccionados.'
+                : 'No hay partidos disponibles'}
+            </p>
             <Button onClick={() => setShowCreateMatch(true)} className="mt-4 bg-blue-600 hover:bg-blue-700">
               <Plus className="h-4 w-4 mr-2" />
               Crear el primer partido
