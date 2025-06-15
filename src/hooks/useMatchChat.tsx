@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -13,11 +13,23 @@ export interface Message {
   } | null;
 }
 
-export const useMatchChat = (matchId: string | undefined) => {
+interface Participant {
+  user_id: string;
+  profiles: {
+    full_name: string | null;
+  } | null;
+}
+
+export const useMatchChat = (matchId: string | undefined, participants: Participant[] = []) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const participantsMap = useMemo(() => 
+    new Map(participants.map(p => [p.user_id, p.profiles])),
+    [participants]
+  );
 
   const fetchMessages = useCallback(async () => {
     if (!matchId || !user) return;
@@ -73,21 +85,19 @@ export const useMatchChat = (matchId: string | undefined) => {
     const channel = supabase.channel(`match-chat-${matchId}`);
 
     const handleNewMessage = (payload: any) => {
-        const fetchNewMessageWithProfile = async () => {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('full_name')
-                .eq('id', payload.new.user_id)
-                .single();
-            
-            const newMessage: Message = {
-                ...payload.new,
-                profiles: error ? { full_name: 'Usuario' } : data
-            };
-            setMessages(currentMessages => [...currentMessages, newMessage]);
+        const profileInfo = participantsMap.get(payload.new.user_id);
+        
+        const newMessage: Message = {
+            ...payload.new,
+            profiles: profileInfo || { full_name: 'Usuario' }
         };
 
-        fetchNewMessageWithProfile();
+        setMessages(currentMessages => {
+            if (currentMessages.some(m => m.id === newMessage.id)) {
+                return currentMessages;
+            }
+            return [...currentMessages, newMessage];
+        });
     };
 
     channel
@@ -107,7 +117,7 @@ export const useMatchChat = (matchId: string | undefined) => {
       supabase.removeChannel(channel);
     };
 
-  }, [matchId, fetchMessages]);
+  }, [matchId, fetchMessages, participantsMap]);
 
   return { messages, loading, error, sendMessage };
 };

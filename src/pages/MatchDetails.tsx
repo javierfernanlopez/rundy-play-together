@@ -372,7 +372,7 @@ const MatchDetails = () => {
         
         {/* Chat Card */}
         {(match.is_participant || match.is_creator) && match.id && (
-          <MatchChat matchId={match.id} />
+          <MatchChat matchId={match.id} participants={match.participants || []} />
         )}
       </div>
 

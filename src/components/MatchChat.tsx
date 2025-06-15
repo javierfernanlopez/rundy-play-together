@@ -12,11 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 
 interface MatchChatProps {
   matchId: string;
+  participants: any[];
 }
 
-const MatchChat = ({ matchId }: MatchChatProps) => {
+const MatchChat = ({ matchId, participants }: MatchChatProps) => {
   const { user } = useAuth();
-  const { messages, loading, sendMessage } = useMatchChat(matchId);
+  const { messages, loading, sendMessage } = useMatchChat(matchId, participants);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
