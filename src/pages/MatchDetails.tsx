@@ -170,12 +170,22 @@ const MatchDetails = () => {
   };
 
   const getParticipantName = (participant: any) => {
+    // Primero verificar si hay un perfil directo
     if (participant.profiles?.full_name) {
       return participant.profiles.full_name;
     }
     if (participant.profiles?.email) {
       return participant.profiles.email.split('@')[0];
     }
+    
+    // Si no hay perfil directo, verificar si es el creador
+    if (participant.user_id === match.creator_id && match.creator_profile?.full_name) {
+      return match.creator_profile.full_name;
+    }
+    if (participant.user_id === match.creator_id && match.creator_profile?.email) {
+      return match.creator_profile.email.split('@')[0];
+    }
+    
     return 'Usuario';
   };
 
