@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -141,12 +142,18 @@ export const useMatches = () => {
 
       if (error) throw error;
       
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
       // Agregar al creador como participante automáticamente
       // Esto disparará el trigger que incrementa current_players
       const { error: participantError } = await supabase
         .from('match_participants')
         .insert([
-          { match_id: data.id, user_id: user.id, full_name: user.user_metadata.full_name || user.email }
+          { match_id: data.id, user_id: user.id, full_name: profile?.full_name || user.email }
         ]);
 
       if (participantError) throw participantError;
@@ -163,10 +170,16 @@ export const useMatches = () => {
     if (!user) return { error: 'Usuario no autenticado' };
 
     try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
       const { error } = await supabase
         .from('match_participants')
         .insert([
-          { match_id: matchId, user_id: user.id, full_name: user.user_metadata.full_name || user.email }
+          { match_id: matchId, user_id: user.id, full_name: profile?.full_name || user.email }
         ]);
 
       if (error) throw error;
