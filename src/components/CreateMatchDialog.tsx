@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +43,18 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
     { label: 'Baloncesto', value: 'basketball' },
     { label: 'Bádminton', value: 'badminton' }
   ];
+
+  const timeSlots = useMemo(() => {
+    const slots = [];
+    for (let h = 8; h < 24; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const hour = h.toString().padStart(2, '0');
+        const minute = m.toString().padStart(2, '0');
+        slots.push(`${hour}:${minute}`);
+      }
+    }
+    return slots;
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,12 +217,18 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
 
             <div className="space-y-2">
               <Label htmlFor="time">Hora *</Label>
-              <Input
-                id="time"
-                type="time"
-                value={formData.time}
-                onChange={(e) => handleInputChange('time', e.target.value)}
-              />
+              <Select value={formData.time} onValueChange={(value) => handleInputChange('time', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una hora" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeSlots.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
