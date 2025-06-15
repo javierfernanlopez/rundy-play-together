@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { 
   Home, 
   Calendar, 
@@ -91,6 +92,18 @@ const Index = () => {
   const createdMatches = upcomingMatches.filter(match => match.is_creator);
   const joinedMatches = upcomingMatches.filter(match => !match.is_creator && match.is_participant);
 
+  const getSportToggleClasses = (sport: string) => {
+    const sportClasses: { [key: string]: string } = {
+      'Fútbol': 'text-green-800 border-green-300 hover:bg-green-100 data-[state=on]:bg-green-600 data-[state=on]:text-white data-[state=on]:border-green-600',
+      'Tenis': 'text-yellow-800 border-yellow-300 hover:bg-yellow-100 data-[state=on]:bg-yellow-500 data-[state=on]:text-white data-[state=on]:border-yellow-500',
+      'Pádel': 'text-purple-800 border-purple-300 hover:bg-purple-100 data-[state=on]:bg-purple-600 data-[state=on]:text-white data-[state=on]:border-purple-600',
+      'Voleibol': 'text-orange-800 border-orange-300 hover:bg-orange-100 data-[state=on]:bg-orange-500 data-[state=on]:text-white data-[state=on]:border-orange-500',
+      'Baloncesto': 'text-red-800 border-red-300 hover:bg-red-100 data-[state=on]:bg-red-600 data-[state=on]:text-white data-[state=on]:border-red-600',
+      'Bádminton': 'text-blue-800 border-blue-300 hover:bg-blue-100 data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=on]:border-blue-600',
+    };
+    return sportClasses[sport] || 'text-gray-800 border-gray-300 hover:bg-gray-100 data-[state=on]:bg-gray-600 data-[state=on]:text-white data-[state=on]:border-gray-600';
+  };
+
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Header */}
@@ -117,24 +130,27 @@ const Index = () => {
       {/* Sport Filters */}
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-gray-600 uppercase tracking-wider">Filtrar por deporte</h2>
-        <ToggleGroup
-          type="multiple"
-          variant="outline"
-          value={selectedSports}
-          onValueChange={setSelectedSports}
-          className="flex flex-wrap gap-2"
-        >
-          {sports.map((sport) => (
-            <ToggleGroupItem 
-              key={sport} 
-              value={sport} 
-              aria-label={`Toggle ${sport}`}
-              className="data-[state=on]:bg-blue-100 data-[state=on]:text-blue-800 border-gray-300 rounded-full px-4"
-            >
-              {sport}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <ScrollArea className="w-full whitespace-nowrap">
+          <ToggleGroup
+            type="multiple"
+            variant="outline"
+            value={selectedSports}
+            onValueChange={setSelectedSports}
+            className="flex gap-2 pb-3"
+          >
+            {sports.map((sport) => (
+              <ToggleGroupItem 
+                key={sport} 
+                value={sport} 
+                aria-label={`Toggle ${sport}`}
+                className={`rounded-full px-4 ${getSportToggleClasses(sport)}`}
+              >
+                {sport}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+          <ScrollBar orientation="horizontal" className="h-2" />
+        </ScrollArea>
       </div>
 
       {/* Loading State */}
