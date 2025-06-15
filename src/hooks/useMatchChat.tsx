@@ -41,22 +41,27 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
           id,
           created_at,
           message,
-          user_id,
-          profiles (
-            full_name
-          )
+          user_id
         `)
         .eq('match_id', matchId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages(data || []);
+      
+      const enrichedMessages = (data || []).map(msg => ({
+        ...msg,
+        profiles: {
+          full_name: participantsMap.get(msg.user_id) || 'Usuario'
+        }
+      }));
+      
+      setMessages(enrichedMessages);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar los mensajes');
     } finally {
       setLoading(false);
     }
-  }, [matchId, user]);
+  }, [matchId, user, participantsMap]);
 
   const sendMessage = async (message: string) => {
     if (!matchId || !user || !message.trim()) return { error: 'Mensaje inválido' };
