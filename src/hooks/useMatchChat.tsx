@@ -61,7 +61,7 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
       
       setMessages(enrichedMessages);
       
-      // Calcular mensajes no leídos
+      // Calcular mensajes no leídos solo si no es la primera carga
       if (enrichedMessages.length > 0 && lastReadTimestampRef.current) {
         const unread = enrichedMessages.filter(msg => 
           msg.user_id !== user.id && 
@@ -105,7 +105,7 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
   }, [messages]);
 
   useEffect(() => {
-    if (!matchId) return;
+    if (!matchId || !user) return;
 
     // Cleanup previous channel if it exists
     if (channelRef.current) {
@@ -116,7 +116,7 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
     fetchMessages();
 
     // Create a new channel with a unique name to avoid conflicts
-    const channelName = `match-chat-${matchId}-${Date.now()}`;
+    const channelName = `match-chat-${matchId}-${user.id}-${Date.now()}`;
     const channel = supabase.channel(channelName);
     channelRef.current = channel;
 
@@ -129,14 +129,15 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
         };
 
         setMessages(currentMessages => {
+            // Evitar duplicados
             if (currentMessages.some(m => m.id === newMessage.id)) {
                 return currentMessages;
             }
             return [...currentMessages, newMessage];
         });
 
-        // Incrementar contador de no leídos si el mensaje no es del usuario actual
-        if (payload.new.user_id !== user?.id) {
+        // Incrementar contador de no leídos solo si el mensaje no es del usuario actual
+        if (payload.new.user_id !== user.id) {
           setUnreadCount(prev => prev + 1);
         }
     };
@@ -152,7 +153,9 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
         },
         handleNewMessage
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Channel subscription status:', status);
+      });
 
     return () => {
       if (channelRef.current) {
@@ -161,7 +164,7 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
       }
     };
 
-  }, [matchId, fetchMessages, participantsMap, user?.id]);
+  }, [matchId, user, participantsMap]);
 
   return { messages, loading, error, sendMessage, unreadCount, markAsRead };
 };
