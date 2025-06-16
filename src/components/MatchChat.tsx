@@ -22,6 +22,7 @@ const MatchChat = ({ matchId, participants, isModal = false, onClose }: MatchCha
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const getInitials = (name: string | null | undefined): string => {
@@ -30,12 +31,7 @@ const MatchChat = ({ matchId, participants, isModal = false, onClose }: MatchCha
   };
 
   const scrollToBottom = () => {
-    if (scrollAreaRef.current) {
-        const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-        if (viewport) {
-            viewport.scrollTop = viewport.scrollHeight;
-        }
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -68,7 +64,7 @@ const MatchChat = ({ matchId, participants, isModal = false, onClose }: MatchCha
     }
   };
 
-  const containerHeight = isModal ? 'h-96' : 'h-96';
+  const containerHeight = isModal ? 'h-full' : 'h-96';
 
   return (
     <div className={`flex flex-col ${containerHeight}`}>
@@ -97,6 +93,7 @@ const MatchChat = ({ matchId, participants, isModal = false, onClose }: MatchCha
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
       <form onSubmit={handleSendMessage} className="flex gap-2">

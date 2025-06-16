@@ -355,7 +355,7 @@ const MatchDetails = () => {
 
       {/* Chat Modal */}
       <Dialog open={showChatModal} onOpenChange={setShowChatModal}>
-        <DialogContent className="max-w-md mx-auto max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-md mx-auto max-h-[80vh] h-[600px] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <MessageCircle className="h-5 w-5 mr-2" />
