@@ -25,6 +25,7 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const lastReadTimestampRef = useRef<string | null>(null);
+  const channelRef = useRef<any>(null);
 
   const participantsMap = useMemo(() => 
     new Map(participants.map(p => [p.user_id, p.full_name])),
@@ -106,9 +107,18 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
   useEffect(() => {
     if (!matchId) return;
 
+    // Cleanup previous channel if it exists
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     fetchMessages();
 
-    const channel = supabase.channel(`match-chat-${matchId}`);
+    // Create a new channel with a unique name to avoid conflicts
+    const channelName = `match-chat-${matchId}-${Date.now()}`;
+    const channel = supabase.channel(channelName);
+    channelRef.current = channel;
 
     const handleNewMessage = (payload: any) => {
         const fullName = participantsMap.get(payload.new.user_id);
@@ -145,7 +155,10 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
 
   }, [matchId, fetchMessages, participantsMap, user?.id]);
