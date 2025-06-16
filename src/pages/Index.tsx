@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,14 +95,14 @@ const Index = () => {
 
   const getSportToggleClasses = (sport: string) => {
     const sportClasses: { [key: string]: string } = {
-      'Fútbol': 'text-green-800 border-green-300 hover:bg-green-100 data-[state=on]:bg-green-600 data-[state=on]:text-white data-[state=on]:border-green-600',
-      'Tenis': 'text-yellow-800 border-yellow-300 hover:bg-yellow-100 data-[state=on]:bg-yellow-500 data-[state=on]:text-white data-[state=on]:border-yellow-500',
-      'Pádel': 'text-purple-800 border-purple-300 hover:bg-purple-100 data-[state=on]:bg-purple-600 data-[state=on]:text-white data-[state=on]:border-purple-600',
-      'Voleibol': 'text-orange-800 border-orange-300 hover:bg-orange-100 data-[state=on]:bg-orange-500 data-[state=on]:text-white data-[state=on]:border-orange-500',
-      'Baloncesto': 'text-red-800 border-red-300 hover:bg-red-100 data-[state=on]:bg-red-600 data-[state=on]:text-white data-[state=on]:border-red-600',
-      'Bádminton': 'text-blue-800 border-blue-300 hover:bg-blue-100 data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=on]:border-blue-600',
+      'Fútbol': 'text-green-800 border-green-300 hover:bg-green-100 data-[state=on]:bg-green-500 data-[state=on]:text-white data-[state=on]:border-green-500',
+      'Tenis': 'text-yellow-800 border-yellow-300 hover:bg-yellow-100 data-[state=on]:bg-yellow-400 data-[state=on]:text-white data-[state=on]:border-yellow-400',
+      'Pádel': 'text-purple-800 border-purple-300 hover:bg-purple-100 data-[state=on]:bg-purple-500 data-[state=on]:text-white data-[state=on]:border-purple-500',
+      'Voleibol': 'text-orange-800 border-orange-300 hover:bg-orange-100 data-[state=on]:bg-orange-400 data-[state=on]:text-white data-[state=on]:border-orange-400',
+      'Baloncesto': 'text-red-800 border-red-300 hover:bg-red-100 data-[state=on]:bg-red-500 data-[state=on]:text-white data-[state=on]:border-red-500',
+      'Bádminton': 'text-blue-800 border-blue-300 hover:bg-blue-100 data-[state=on]:bg-blue-500 data-[state=on]:text-white data-[state=on]:border-blue-500',
     };
-    return sportClasses[sport] || 'text-gray-800 border-gray-300 hover:bg-gray-100 data-[state=on]:bg-gray-600 data-[state=on]:text-white data-[state=on]:border-gray-600';
+    return sportClasses[sport] || 'text-gray-800 border-gray-300 hover:bg-gray-100 data-[state=on]:bg-gray-500 data-[state=on]:text-white data-[state=on]:border-gray-500';
   };
 
   const renderDashboard = () => (
@@ -143,7 +144,7 @@ const Index = () => {
                 key={sport} 
                 value={sport} 
                 aria-label={`Toggle ${sport}`}
-                className={`rounded-full px-4 ${getSportToggleClasses(sport)}`}
+                className={`rounded-full px-3 py-1 h-8 text-sm ${getSportToggleClasses(sport)}`}
               >
                 {sport}
               </ToggleGroupItem>
