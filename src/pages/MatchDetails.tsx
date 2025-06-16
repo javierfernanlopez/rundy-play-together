@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, MapPin, Calendar, Euro, Trash2, MessageCircle } from 'lucide-react';
 import { useMatches } from '@/hooks/useMatches';
+import { useMatchChat } from '@/hooks/useMatchChat';
 import { useToast } from '@/hooks/use-toast';
 import MatchChat from '@/components/MatchChat';
 
@@ -187,21 +188,6 @@ const MatchDetails = () => {
 
   const getParticipantInitials = (participant: any) => {
     const name = getParticipantName(participant);
-    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-  };
-
-  const getCreatorName = () => {
-    if (match?.creator_profile?.full_name) {
-      return match.creator_profile.full_name;
-    }
-    if (match?.creator_profile?.email) {
-      return match.creator_profile.email.split('@')[0];
-    }
-    return 'Organizador';
-  };
-
-  const getCreatorInitials = () => {
-    const name = getCreatorName();
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
   };
 
