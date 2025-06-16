@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -22,6 +23,8 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const lastReadTimestampRef = useRef<string | null>(null);
 
   const participantsMap = useMemo(() => 
     new Map(participants.map(p => [p.user_id, p.full_name])),
@@ -56,6 +59,19 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
       }));
       
       setMessages(enrichedMessages);
+      
+      // Calcular mensajes no leídos
+      if (enrichedMessages.length > 0 && lastReadTimestampRef.current) {
+        const unread = enrichedMessages.filter(msg => 
+          msg.user_id !== user.id && 
+          new Date(msg.created_at) > new Date(lastReadTimestampRef.current!)
+        ).length;
+        setUnreadCount(unread);
+      } else if (enrichedMessages.length > 0 && !lastReadTimestampRef.current) {
+        // Primera carga - contar todos los mensajes de otros usuarios
+        const unread = enrichedMessages.filter(msg => msg.user_id !== user.id).length;
+        setUnreadCount(unread);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar los mensajes');
     } finally {
@@ -79,6 +95,14 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
     }
   };
 
+  const markAsRead = useCallback(() => {
+    if (messages.length > 0) {
+      const latestMessage = messages[messages.length - 1];
+      lastReadTimestampRef.current = latestMessage.created_at;
+      setUnreadCount(0);
+    }
+  }, [messages]);
+
   useEffect(() => {
     if (!matchId) return;
 
@@ -100,6 +124,11 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
             }
             return [...currentMessages, newMessage];
         });
+
+        // Incrementar contador de no leídos si el mensaje no es del usuario actual
+        if (payload.new.user_id !== user?.id) {
+          setUnreadCount(prev => prev + 1);
+        }
     };
 
     channel
@@ -119,7 +148,7 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
       supabase.removeChannel(channel);
     };
 
-  }, [matchId, fetchMessages, participantsMap]);
+  }, [matchId, fetchMessages, participantsMap, user?.id]);
 
-  return { messages, loading, error, sendMessage };
+  return { messages, loading, error, sendMessage, unreadCount, markAsRead };
 };

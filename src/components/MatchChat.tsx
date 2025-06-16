@@ -4,20 +4,21 @@ import { useMatchChat } from '@/hooks/useMatchChat';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, MessageCircle } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
 interface MatchChatProps {
   matchId: string;
   participants: any[];
+  isModal?: boolean;
+  onClose?: () => void;
 }
 
-const MatchChat = ({ matchId, participants }: MatchChatProps) => {
+const MatchChat = ({ matchId, participants, isModal = false, onClose }: MatchChatProps) => {
   const { user } = useAuth();
-  const { messages, loading, sendMessage } = useMatchChat(matchId, participants);
+  const { messages, loading, sendMessage, markAsRead } = useMatchChat(matchId, participants);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -41,6 +42,13 @@ const MatchChat = ({ matchId, participants }: MatchChatProps) => {
     scrollToBottom();
   }, [messages]);
 
+  // Marcar mensajes como leídos cuando se abre el modal
+  useEffect(() => {
+    if (isModal && messages.length > 0) {
+      markAsRead();
+    }
+  }, [isModal, messages.length, markAsRead]);
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !user) return;
@@ -60,57 +68,49 @@ const MatchChat = ({ matchId, participants }: MatchChatProps) => {
     }
   };
 
+  const containerHeight = isModal ? 'h-96' : 'h-96';
+
   return (
-    <Card className="border-0 shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-lg flex items-center">
-          <MessageCircle className="h-5 w-5 mr-2" />
-          Chat del Partido
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex flex-col h-96">
-          <ScrollArea className="flex-grow p-4 border rounded-lg mb-4 bg-gray-50" ref={scrollAreaRef}>
-            {loading && <div className="text-center text-gray-500">Cargando mensajes...</div>}
-            {!loading && messages.length === 0 && (
-              <div className="text-center text-gray-500">Aún no hay mensajes. ¡Sé el primero!</div>
-            )}
-            <div className="space-y-4">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex items-start gap-3 ${msg.user_id === user?.id ? 'flex-row-reverse' : ''}`}
-                >
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className={msg.user_id === user?.id ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'}>
-                        {getInitials(msg.profiles?.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className={`p-3 rounded-lg max-w-xs ${msg.user_id === user?.id ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
-                    <p className="text-sm font-medium mb-1">{msg.profiles?.full_name || 'Usuario'}</p>
-                    <p className="text-sm">{msg.message}</p>
-                    <p className="text-xs text-right mt-1 opacity-70">
-                        {new Date(msg.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-              ))}
+    <div className={`flex flex-col ${containerHeight}`}>
+      <ScrollArea className="flex-grow p-4 border rounded-lg mb-4 bg-gray-50" ref={scrollAreaRef}>
+        {loading && <div className="text-center text-gray-500">Cargando mensajes...</div>}
+        {!loading && messages.length === 0 && (
+          <div className="text-center text-gray-500">Aún no hay mensajes. ¡Sé el primero!</div>
+        )}
+        <div className="space-y-4">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex items-start gap-3 ${msg.user_id === user?.id ? 'flex-row-reverse' : ''}`}
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className={msg.user_id === user?.id ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'}>
+                    {getInitials(msg.profiles?.full_name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className={`p-3 rounded-lg max-w-xs ${msg.user_id === user?.id ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
+                <p className="text-sm font-medium mb-1">{msg.profiles?.full_name || 'Usuario'}</p>
+                <p className="text-sm">{msg.message}</p>
+                <p className="text-xs text-right mt-1 opacity-70">
+                    {new Date(msg.created_at).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
             </div>
-          </ScrollArea>
-          <form onSubmit={handleSendMessage} className="flex gap-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Escribe un mensaje..."
-              disabled={isSending}
-            />
-            <Button type="submit" disabled={isSending || !newMessage.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
+          ))}
         </div>
-      </CardContent>
-    </Card>
+      </ScrollArea>
+      <form onSubmit={handleSendMessage} className="flex gap-2">
+        <Input
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Escribe un mensaje..."
+          disabled={isSending}
+        />
+        <Button type="submit" disabled={isSending || !newMessage.trim()}>
+          <Send className="h-4 w-4" />
+        </Button>
+      </form>
+    </div>
   );
 };
 

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MapPin, Calendar, Euro, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, MapPin, Calendar, Euro, Trash2, MessageCircle } from 'lucide-react';
 import { useMatches } from '@/hooks/useMatches';
 import { useToast } from '@/hooks/use-toast';
 import MatchChat from '@/components/MatchChat';
@@ -28,6 +29,7 @@ const MatchDetails = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -203,6 +205,22 @@ const MatchDetails = () => {
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
   };
 
+  // Componente para el botón de chat con contador
+  const MatchChatButton = ({ matchId, participants, onOpenChat }: { matchId: string, participants: any[], onOpenChat: () => void }) => {
+    const { unreadCount } = useMatchChat(matchId, participants);
+
+    return (
+      <Button variant="ghost" size="icon" onClick={onOpenChat} className="relative">
+        <MessageCircle className="h-5 w-5" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center min-w-[20px]">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </Button>
+    );
+  };
+
   if (loading) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -236,9 +254,18 @@ const MatchDetails = () => {
             </Button>
             <h1 className="text-lg font-semibold text-gray-900">Detalles del partido</h1>
           </div>
-          {match.is_creator && <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(true)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-              <Trash2 className="h-5 w-5" />
-            </Button>}
+          <div className="flex items-center space-x-2">
+            {(match.is_participant || match.is_creator) && (
+              <MatchChatButton 
+                matchId={match.id} 
+                participants={match.participants || []} 
+                onOpenChat={() => setShowChatModal(true)}
+              />
+            )}
+            {match.is_creator && <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(true)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                <Trash2 className="h-5 w-5" />
+              </Button>}
+          </div>
         </div>
       </div>
 
@@ -320,11 +347,6 @@ const MatchDetails = () => {
               <p className="text-gray-700">{match.description}</p>
             </CardContent>
           </Card>}
-        
-        {/* Chat Card */}
-        {(match.is_participant || match.is_creator) && match.id && (
-          <MatchChat matchId={match.id} participants={match.participants || []} />
-        )}
       </div>
 
       {/* Floating Action Button */}
@@ -344,6 +366,26 @@ const MatchDetails = () => {
             </Button>}
         </div>
       </div>
+
+      {/* Chat Modal */}
+      <Dialog open={showChatModal} onOpenChange={setShowChatModal}>
+        <DialogContent className="max-w-md mx-auto max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Chat del Partido
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            <MatchChat 
+              matchId={match.id} 
+              participants={match.participants || []} 
+              isModal={true}
+              onClose={() => setShowChatModal(false)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
