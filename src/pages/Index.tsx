@@ -337,10 +337,7 @@ const Index = () => {
             Editar perfil
           </Button>
         </EditProfileDialog>
-        <Button variant="outline" className="w-full justify-start">
-          <Trophy className="h-4 w-4 mr-2" />
-          Deportes favoritos
-        </Button>
+        
         <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700" onClick={handleLogout}>
           <LogOut className="h-4 w-4 mr-2" />
           Cerrar sesión
