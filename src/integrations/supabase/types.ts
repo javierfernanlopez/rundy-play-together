@@ -130,27 +130,33 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string | null
+          favorite_sports: string[] | null
           full_name: string | null
           id: string
           phone: string | null
+          skill_level: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
+          favorite_sports?: string[] | null
           full_name?: string | null
           id: string
           phone?: string | null
+          skill_level?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
+          favorite_sports?: string[] | null
           full_name?: string | null
           id?: string
           phone?: string | null
+          skill_level?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -166,7 +172,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      skill_level_enum: "beginner" | "intermediate" | "advanced" | "expert"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -281,6 +287,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      skill_level_enum: ["beginner", "intermediate", "advanced", "expert"],
+    },
   },
 } as const

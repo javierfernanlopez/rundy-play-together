@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,8 +25,10 @@ import CreateMatchDialog from '@/components/CreateMatchDialog';
 import MatchCard from '@/components/MatchCard';
 import NavigationBar from '@/components/NavigationBar';
 import FloatingActionButton from '@/components/FloatingActionButton';
+import EditProfileDialog from '@/components/EditProfileDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useMatches } from '@/hooks/useMatches';
+import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
@@ -39,7 +42,27 @@ const Index = () => {
     getUserPastMatches, 
     getAvailableMatches 
   } = useMatches();
+  const { profile, refetch: refetchProfile } = useProfile();
   const { toast } = useToast();
+
+  // Establecer deportes favoritos como filtros por defecto cuando se carga el perfil
+  useEffect(() => {
+    if (profile?.favorite_sports && profile.favorite_sports.length > 0) {
+      // Convertir los deportes favoritos del perfil a nombres de visualización
+      const sportDisplayNames = profile.favorite_sports.map(sport => {
+        const sportNames: { [key: string]: string } = {
+          'football': 'Fútbol',
+          'tennis': 'Tenis',
+          'padel': 'Pádel',
+          'volleyball': 'Voleibol',
+          'basketball': 'Baloncesto',
+          'badminton': 'Bádminton'
+        };
+        return sportNames[sport] || sport;
+      });
+      setSelectedSports(sportDisplayNames);
+    }
+  }, [profile]);
 
   const handleLogout = async () => {
     try {
@@ -97,8 +120,6 @@ const Index = () => {
   const createdPastMatches = userPastMatches.filter(match => match.is_creator);
   const joinedFutureMatches = userFutureMatches.filter(match => !match.is_creator && match.is_participant);
   const joinedPastMatches = userPastMatches.filter(match => !match.is_creator && match.is_participant);
-
-  // ... keep existing code (getSportToggleClasses function)
 
   const getSportToggleClasses = (sport: string) => {
     const sportClasses: { [key: string]: string } = {
@@ -335,7 +356,14 @@ const Index = () => {
                 {user?.user_metadata?.full_name || 'Usuario'}
               </h2>
               <p className="text-gray-600">{user?.email}</p>
-              <Badge variant="secondary" className="mt-2">Nivel Intermedio</Badge>
+              <Badge variant="secondary" className="mt-2">
+                {profile?.skill_level ? (
+                  profile.skill_level === 'beginner' ? 'Principiante' :
+                  profile.skill_level === 'intermediate' ? 'Intermedio' :
+                  profile.skill_level === 'advanced' ? 'Avanzado' :
+                  profile.skill_level === 'expert' ? 'Experto' : 'Principiante'
+                ) : 'Principiante'}
+              </Badge>
             </div>
           </div>
         </CardContent>
@@ -348,11 +376,25 @@ const Index = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {['Fútbol', 'Tenis', 'Pádel'].map((sport) => (
-              <Badge key={sport} variant="outline" className="border-blue-200 text-blue-700">
-                {sport}
-              </Badge>
-            ))}
+            {profile?.favorite_sports && profile.favorite_sports.length > 0 ? (
+              profile.favorite_sports.map((sport) => {
+                const sportNames: { [key: string]: string } = {
+                  'football': 'Fútbol',
+                  'tennis': 'Tenis',
+                  'padel': 'Pádel',
+                  'volleyball': 'Voleibol',
+                  'basketball': 'Baloncesto',
+                  'badminton': 'Bádminton'
+                };
+                return (
+                  <Badge key={sport} variant="outline" className="border-blue-200 text-blue-700">
+                    {sportNames[sport] || sport}
+                  </Badge>
+                );
+              })
+            ) : (
+              <p className="text-gray-500 text-sm">No has seleccionado deportes favoritos</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -375,10 +417,12 @@ const Index = () => {
 
       {/* Settings */}
       <div className="space-y-2">
-        <Button variant="outline" className="w-full justify-start">
-          <User className="h-4 w-4 mr-2" />
-          Editar perfil
-        </Button>
+        <EditProfileDialog onProfileUpdate={refetchProfile}>
+          <Button variant="outline" className="w-full justify-start">
+            <User className="h-4 w-4 mr-2" />
+            Editar perfil
+          </Button>
+        </EditProfileDialog>
         <Button variant="outline" className="w-full justify-start">
           <Trophy className="h-4 w-4 mr-2" />
           Deportes favoritos
