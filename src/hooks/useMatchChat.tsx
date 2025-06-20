@@ -84,11 +84,31 @@ export const useMatchChat = (matchId: string | undefined, participants: Particip
     if (!matchId || !user || !message.trim()) return { error: 'Mensaje inválido' };
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('match_chat_messages')
-        .insert([{ match_id: matchId, user_id: user.id, message: message.trim() }]);
+        .insert([{ match_id: matchId, user_id: user.id, message: message.trim() }])
+        .select()
+        .single();
       
       if (error) throw error;
+      
+      // Agregar el mensaje inmediatamente a la lista local
+      if (data) {
+        const newMessage: Message = {
+          ...data,
+          profiles: {
+            full_name: participantsMap.get(user.id) || 'Usuario'
+          }
+        };
+        
+        setMessages(currentMessages => {
+          // Evitar duplicados
+          if (currentMessages.some(m => m.id === newMessage.id)) {
+            return currentMessages;
+          }
+          return [...currentMessages, newMessage];
+        });
+      }
       
       return { error: null };
     } catch (err) {
