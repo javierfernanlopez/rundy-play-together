@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,8 @@ import {
   Users,
   Search,
   Filter,
-  LogOut
+  LogOut,
+  History
 } from 'lucide-react';
 import CreateMatchDialog from '@/components/CreateMatchDialog';
 import MatchCard from '@/components/MatchCard';
@@ -33,7 +33,12 @@ const Index = () => {
   const [showCreateMatch, setShowCreateMatch] = useState(false);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const { user, signOut } = useAuth();
-  const { matches, loading } = useMatches();
+  const { 
+    loading, 
+    getUserFutureMatches, 
+    getUserPastMatches, 
+    getAvailableMatches 
+  } = useMatches();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -76,22 +81,24 @@ const Index = () => {
     }));
   };
 
-  // Separar partidos según la participación del usuario
-  const userMatches = matches.filter(match => match.is_creator || match.is_participant);
-  const availableMatches = matches.filter(match => !match.is_creator && !match.is_participant);
-
-  const upcomingMatches = convertMatches(userMatches);
-  const recommendedMatches = convertMatches(availableMatches);
+  // Obtener partidos usando las nuevas funciones
+  const userFutureMatches = convertMatches(getUserFutureMatches());
+  const userPastMatches = convertMatches(getUserPastMatches());
+  const availableMatches = convertMatches(getAvailableMatches());
 
   // Lista de deportes y partidos recomendados filtrados
   const sports = ['Fútbol', 'Tenis', 'Pádel', 'Voleibol', 'Baloncesto', 'Bádminton'];
   const filteredRecommendedMatches = selectedSports.length > 0
-    ? recommendedMatches.filter(match => selectedSports.includes(match.sport))
-    : recommendedMatches;
+    ? availableMatches.filter(match => selectedSports.includes(match.sport))
+    : availableMatches;
 
-  // Filtrar partidos para las pestañas
-  const createdMatches = upcomingMatches.filter(match => match.is_creator);
-  const joinedMatches = upcomingMatches.filter(match => !match.is_creator && match.is_participant);
+  // Filtrar partidos para las pestañas - separando futuros y pasados
+  const createdFutureMatches = userFutureMatches.filter(match => match.is_creator);
+  const createdPastMatches = userPastMatches.filter(match => match.is_creator);
+  const joinedFutureMatches = userFutureMatches.filter(match => !match.is_creator && match.is_participant);
+  const joinedPastMatches = userPastMatches.filter(match => !match.is_creator && match.is_participant);
+
+  // ... keep existing code (getSportToggleClasses function)
 
   const getSportToggleClasses = (sport: string) => {
     const sportClasses: { [key: string]: string } = {
@@ -165,8 +172,8 @@ const Index = () => {
       {/* Upcoming Matches */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold text-gray-900">Mis próximos partidos</h2>
-        {upcomingMatches.length > 0 ? (
-          upcomingMatches.map((match) => (
+        {userFutureMatches.length > 0 ? (
+          userFutureMatches.map((match) => (
             <MatchCard key={match.id} match={match} type="upcoming" />
           ))
         ) : (
@@ -211,12 +218,43 @@ const Index = () => {
           <TabsTrigger value="joined">Unidos</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="created" className="space-y-3 mt-6">
-          {createdMatches.length > 0 ? (
-            createdMatches.map((match) => (
-              <MatchCard key={match.id} match={match} type="created" />
-            ))
-          ) : (
+        <TabsContent value="created" className="space-y-6 mt-6">
+          {/* Partidos creados futuros */}
+          <div className="space-y-3">
+            <h3 className="text-md font-semibold text-gray-900 flex items-center">
+              <Calendar className="h-4 w-4 mr-2" />
+              Próximos partidos
+            </h3>
+            {createdFutureMatches.length > 0 ? (
+              createdFutureMatches.map((match) => (
+                <MatchCard key={match.id} match={match} type="created" />
+              ))
+            ) : (
+              <Card className="p-4 text-center">
+                <p className="text-gray-500 text-sm">No tienes partidos futuros creados</p>
+              </Card>
+            )}
+          </div>
+
+          {/* Partidos creados pasados */}
+          <div className="space-y-3">
+            <h3 className="text-md font-semibold text-gray-900 flex items-center">
+              <History className="h-4 w-4 mr-2" />
+              Partidos pasados
+            </h3>
+            {createdPastMatches.length > 0 ? (
+              createdPastMatches.map((match) => (
+                <MatchCard key={match.id} match={match} type="created" />
+              ))
+            ) : (
+              <Card className="p-4 text-center">
+                <p className="text-gray-500 text-sm">No tienes partidos pasados creados</p>
+              </Card>
+            )}
+          </div>
+
+          {/* Empty state si no hay ningún partido */}
+          {createdFutureMatches.length === 0 && createdPastMatches.length === 0 && (
             <div className="text-center py-12">
               <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No has creado partidos</h3>
@@ -229,12 +267,43 @@ const Index = () => {
           )}
         </TabsContent>
         
-        <TabsContent value="joined" className="space-y-3 mt-6">
-          {joinedMatches.length > 0 ? (
-            joinedMatches.map((match) => (
-              <MatchCard key={match.id} match={match} type="joined" />
-            ))
-          ) : (
+        <TabsContent value="joined" className="space-y-6 mt-6">
+          {/* Partidos unidos futuros */}
+          <div className="space-y-3">
+            <h3 className="text-md font-semibold text-gray-900 flex items-center">
+              <Calendar className="h-4 w-4 mr-2" />
+              Próximos partidos
+            </h3>
+            {joinedFutureMatches.length > 0 ? (
+              joinedFutureMatches.map((match) => (
+                <MatchCard key={match.id} match={match} type="joined" />
+              ))
+            ) : (
+              <Card className="p-4 text-center">
+                <p className="text-gray-500 text-sm">No tienes partidos futuros programados</p>
+              </Card>
+            )}
+          </div>
+
+          {/* Partidos unidos pasados */}
+          <div className="space-y-3">
+            <h3 className="text-md font-semibold text-gray-900 flex items-center">
+              <History className="h-4 w-4 mr-2" />
+              Partidos pasados
+            </h3>
+            {joinedPastMatches.length > 0 ? (
+              joinedPastMatches.map((match) => (
+                <MatchCard key={match.id} match={match} type="joined" />
+              ))
+            ) : (
+              <Card className="p-4 text-center">
+                <p className="text-gray-500 text-sm">No tienes partidos pasados</p>
+              </Card>
+            )}
+          </div>
+
+          {/* Empty state si no hay ningún partido */}
+          {joinedFutureMatches.length === 0 && joinedPastMatches.length === 0 && (
             <div className="text-center py-12">
               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No te has unido a partidos</h3>
@@ -292,13 +361,13 @@ const Index = () => {
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{upcomingMatches.length}</div>
+            <div className="text-2xl font-bold text-blue-600">{userFutureMatches.length + userPastMatches.length}</div>
             <div className="text-sm text-gray-600">Partidos jugados</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{upcomingMatches.filter(m => m.is_creator).length}</div>
+            <div className="text-2xl font-bold text-green-600">{createdFutureMatches.length + createdPastMatches.length}</div>
             <div className="text-sm text-gray-600">Partidos organizados</div>
           </CardContent>
         </Card>

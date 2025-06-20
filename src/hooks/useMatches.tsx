@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -103,6 +102,36 @@ export const useMatches = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Función para filtrar partidos futuros/actuales
+  const getFutureMatches = () => {
+    const now = new Date();
+    return matches.filter(match => new Date(match.date) >= now);
+  };
+
+  // Función para filtrar partidos pasados
+  const getPastMatches = () => {
+    const now = new Date();
+    return matches.filter(match => new Date(match.date) < now);
+  };
+
+  // Función para obtener partidos del usuario (futuros)
+  const getUserFutureMatches = () => {
+    const futureMatches = getFutureMatches();
+    return futureMatches.filter(match => match.is_creator || match.is_participant);
+  };
+
+  // Función para obtener partidos del usuario (pasados)
+  const getUserPastMatches = () => {
+    const pastMatches = getPastMatches();
+    return pastMatches.filter(match => match.is_creator || match.is_participant);
+  };
+
+  // Función para obtener partidos disponibles (futuros, no del usuario)
+  const getAvailableMatches = () => {
+    const futureMatches = getFutureMatches();
+    return futureMatches.filter(match => !match.is_creator && !match.is_participant);
   };
 
   const createMatch = async (matchData: {
@@ -324,6 +353,12 @@ export const useMatches = () => {
     joinMatch,
     leaveMatch,
     deleteMatch,
-    getMatchById
+    getMatchById,
+    // Nuevas funciones para filtrado
+    getFutureMatches,
+    getPastMatches,
+    getUserFutureMatches,
+    getUserPastMatches,
+    getAvailableMatches
   };
 };
