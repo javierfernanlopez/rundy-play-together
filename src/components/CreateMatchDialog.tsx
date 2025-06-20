@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, MapPin, Users, Euro } from 'lucide-react';
+import { CalendarIcon, Users, Euro } from 'lucide-react';
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useMatches } from '@/hooks/useMatches';
 import { useToast } from '@/hooks/use-toast';
+import GoogleMapsAutocomplete from './GoogleMapsAutocomplete';
 
 interface CreateMatchDialogProps {
   open: boolean;
@@ -171,20 +173,14 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
             />
           </div>
 
-          {/* Location */}
-          <div className="space-y-2">
-            <Label htmlFor="location">Ubicación *</Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                id="location"
-                placeholder="Dirección o nombre del lugar"
-                className="pl-10"
-                value={formData.location}
-                onChange={(e) => handleInputChange('location', e.target.value)}
-              />
-            </div>
-          </div>
+          {/* Location with Google Maps Autocomplete */}
+          <GoogleMapsAutocomplete
+            value={formData.location}
+            onChange={(value) => handleInputChange('location', value)}
+            label="Ubicación"
+            placeholder="Buscar dirección..."
+            required={true}
+          />
 
           {/* Date and Time */}
           <div className="grid grid-cols-2 gap-4">
