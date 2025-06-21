@@ -25,17 +25,16 @@ const GoogleMapsAutocomplete = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [showPredictions, setShowPredictions] = useState(false);
-  const [apiKey, setApiKey] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const autocompleteService = useRef<google.maps.places.AutocompleteService | null>(null);
 
-  // Temporalmente pedimos la API key al usuario
-  const [showApiKeyInput, setShowApiKeyInput] = useState(true);
+  // API key fija de Google Maps
+  const GOOGLE_MAPS_API_KEY = 'AIzaSyCIHD0nsV6U8JyOx1l-19iCakp2xY6nx1M';
 
   useEffect(() => {
-    if (apiKey && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
@@ -48,7 +47,7 @@ const GoogleMapsAutocomplete = ({
         document.head.removeChild(script);
       };
     }
-  }, [apiKey]);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
@@ -88,39 +87,6 @@ const GoogleMapsAutocomplete = ({
       setShowPredictions(false);
     }, 200);
   };
-
-  if (showApiKeyInput) {
-    return (
-      <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
-        <div className="space-y-2">
-          <Label htmlFor="google-api-key">Google Maps API Key *</Label>
-          <Input
-            id="google-api-key"
-            type="password"
-            placeholder="Introduce tu Google Maps API Key"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-          />
-        </div>
-        <div className="text-sm text-gray-600">
-          <p>Para usar el autocompletado de direcciones necesitas una API Key de Google Maps.</p>
-          <p>Obtén tu clave en: <a href="https://console.cloud.google.com/google/maps-apis" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Google Cloud Console</a></p>
-          <p>Habilita la API "Places API" en tu proyecto.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (apiKey.trim()) {
-              setShowApiKeyInput(false);
-            }
-          }}
-          className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
-        >
-          Continuar
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-2">
@@ -173,7 +139,7 @@ const GoogleMapsAutocomplete = ({
         )}
       </div>
       
-      {!isLoaded && apiKey && (
+      {!isLoaded && (
         <p className="text-sm text-gray-500">Cargando Google Maps...</p>
       )}
     </div>
