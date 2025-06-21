@@ -73,7 +73,7 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
     if (!coordinates) {
       toast({
         title: "Error",
-        description: "Por favor selecciona una ubicación válida",
+        description: "Por favor selecciona una ubicación válida del autocompletado",
         variant: "destructive",
       });
       return;
@@ -91,6 +91,8 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
         sport_type: formData.sport,
         max_players: parseInt(formData.maxPlayers) || 10,
         price: parseFloat(formData.price) || 0,
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
       });
 
       if (error) {

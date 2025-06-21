@@ -143,6 +143,8 @@ export const useMatches = () => {
     sport_type: string;
     max_players: number;
     price: number;
+    latitude?: number;
+    longitude?: number;
   }) => {
     if (!user) return { error: 'Usuario no autenticado' };
 
@@ -164,6 +166,8 @@ export const useMatches = () => {
             max_players: matchData.max_players,
             price: matchData.price,
             creator_id: user.id,
+            latitude: matchData.latitude,
+            longitude: matchData.longitude,
           },
         ])
         .select()

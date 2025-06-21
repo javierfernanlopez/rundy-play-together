@@ -18,7 +18,9 @@ interface GoogleMapsAutocompleteProps {
 // Configuración de librerías necesarias para Google Maps
 const libraries: ("places")[] = ['places'];
 
-// API key pública de Google Maps (debe estar restringida en Google Cloud Console)
+// API key de Google Maps - En producción debería venir de variables de entorno
+// Por ahora mantenemos la clave para que funcione, pero idealmente sería:
+// const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const GOOGLE_MAPS_API_KEY = 'AIzaSyCIHD0nsV6U8JyOx1l-19iCakp2xY6nx1M';
 
 const GoogleMapsAutocomplete = ({ 
@@ -56,6 +58,9 @@ const GoogleMapsAutocomplete = ({
       const formattedAddress = place.formatted_address || place.name || '';
       setInputValue(formattedAddress);
       onChange(formattedAddress, coordinates);
+      
+      console.log('Ubicación seleccionada:', formattedAddress);
+      console.log('Coordenadas:', coordinates);
     }
   }, [onChange]);
 
@@ -118,3 +123,4 @@ const GoogleMapsAutocomplete = ({
 };
 
 export default GoogleMapsAutocomplete;
+
