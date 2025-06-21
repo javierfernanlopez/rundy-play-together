@@ -88,7 +88,9 @@ export type Database = {
           date: string
           description: string | null
           id: string
+          latitude: number | null
           location: string
+          longitude: number | null
           max_players: number
           price: number | null
           sport_type: string
@@ -102,7 +104,9 @@ export type Database = {
           date: string
           description?: string | null
           id?: string
+          latitude?: number | null
           location: string
+          longitude?: number | null
           max_players?: number
           price?: number | null
           sport_type?: string
@@ -116,7 +120,9 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           max_players?: number
           price?: number | null
           sport_type?: string
