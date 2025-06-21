@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -74,7 +73,7 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
     if (!coordinates) {
       toast({
         title: "Error",
-        description: "Por favor selecciona una ubicación válida del mapa",
+        description: "Por favor selecciona una ubicación válida",
         variant: "destructive",
       });
       return;
@@ -92,8 +91,6 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
         sport_type: formData.sport,
         max_players: parseInt(formData.maxPlayers) || 10,
         price: parseFloat(formData.price) || 0,
-        // Agregamos las coordenadas al partido
-        coordinates: coordinates,
       });
 
       if (error) {
@@ -194,14 +191,13 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
             />
           </div>
 
-          {/* Location with Google Maps Autocomplete and Map */}
+          {/* Location with Google Maps Autocomplete (without map) */}
           <GoogleMapsAutocomplete
             value={formData.location}
             onChange={handleLocationChange}
             label="Ubicación"
             placeholder="Buscar dirección..."
             required={true}
-            showMap={true}
           />
 
           {/* Date and Time */}
@@ -282,7 +278,7 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
             </div>
           </div>
 
-          {/* Coordenadas seleccionadas (solo para debug) */}
+          {/* Debug coordinates (optional - can be removed later) */}
           {coordinates && (
             <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
               Coordenadas: {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}

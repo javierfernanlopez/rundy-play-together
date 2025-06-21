@@ -12,7 +12,6 @@ interface GoogleMapsAutocompleteProps {
   label?: string;
   required?: boolean;
   className?: string;
-  showMap?: boolean;
 }
 
 const GoogleMapsAutocomplete = ({ 
@@ -21,14 +20,10 @@ const GoogleMapsAutocomplete = ({
   placeholder = "Buscar dirección...",
   label,
   required = false,
-  className,
-  showMap = true
+  className
 }: GoogleMapsAutocompleteProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<google.maps.Map | null>(null);
-  const markerInstance = useRef<google.maps.Marker | null>(null);
   const autocompleteInstance = useRef<google.maps.places.Autocomplete | null>(null);
 
   // API key fija de Google Maps
@@ -42,7 +37,7 @@ const GoogleMapsAutocomplete = ({
       script.defer = true;
       script.onload = () => {
         setIsLoaded(true);
-        initializeMap();
+        initializeAutocomplete();
       };
       document.head.appendChild(script);
 
@@ -52,60 +47,14 @@ const GoogleMapsAutocomplete = ({
     }
   }, []);
 
-  const initializeMap = () => {
-    if (!inputRef.current || (showMap && !mapRef.current)) return;
-
-    // Coordenadas iniciales (Madrid)
-    const initialPosition = { lat: 40.416775, lng: -3.703790 };
-
-    // Crear el mapa si está habilitado
-    if (showMap && mapRef.current) {
-      mapInstance.current = new google.maps.Map(mapRef.current, {
-        zoom: 12,
-        center: initialPosition,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-      });
-
-      // Crear marcador
-      markerInstance.current = new google.maps.Marker({
-        map: mapInstance.current,
-        anchorPoint: new google.maps.Point(0, -29),
-        draggable: true,
-      });
-
-      // Listener para cuando se arrastra el marcador
-      markerInstance.current.addListener('dragend', () => {
-        if (markerInstance.current) {
-          const position = markerInstance.current.getPosition();
-          if (position) {
-            // Geocodificación inversa para obtener la dirección
-            const geocoder = new google.maps.Geocoder();
-            geocoder.geocode({ location: position }, (results, status) => {
-              if (status === 'OK' && results?.[0]) {
-                const address = results[0].formatted_address;
-                onChange(address, {
-                  lat: position.lat(),
-                  lng: position.lng()
-                });
-              }
-            });
-          }
-        }
-      });
-    }
+  const initializeAutocomplete = () => {
+    if (!inputRef.current) return;
 
     // Inicializar autocompletado
     autocompleteInstance.current = new google.maps.places.Autocomplete(inputRef.current, {
       types: ['address'],
       componentRestrictions: { country: 'es' }, // Restringir a España
     });
-
-    // Vincular los límites del mapa al autocompletado si el mapa está habilitado
-    if (mapInstance.current) {
-      autocompleteInstance.current.bindTo('bounds', mapInstance.current);
-    }
 
     // Listener para cuando se selecciona un lugar
     autocompleteInstance.current.addListener('place_changed', () => {
@@ -124,19 +73,6 @@ const GoogleMapsAutocomplete = ({
 
       // Actualizar el valor y las coordenadas
       onChange(place.formatted_address || place.name || '', coordinates);
-
-      // Actualizar el mapa si está habilitado
-      if (mapInstance.current && markerInstance.current) {
-        if (place.geometry.viewport) {
-          mapInstance.current.fitBounds(place.geometry.viewport);
-        } else {
-          mapInstance.current.setCenter(location);
-          mapInstance.current.setZoom(17);
-        }
-        
-        markerInstance.current.setPosition(location);
-        markerInstance.current.setVisible(true);
-      }
     });
   };
 
@@ -161,19 +97,6 @@ const GoogleMapsAutocomplete = ({
           disabled={!isLoaded}
         />
       </div>
-
-      {showMap && (
-        <div className="space-y-2">
-          <div 
-            ref={mapRef} 
-            className="w-full h-64 rounded-md border border-gray-200"
-            style={{ minHeight: '256px' }}
-          />
-          <p className="text-xs text-gray-500">
-            Puedes arrastrar el marcador para ajustar la ubicación exacta
-          </p>
-        </div>
-      )}
       
       {!isLoaded && (
         <p className="text-sm text-gray-500">Cargando Google Maps...</p>
