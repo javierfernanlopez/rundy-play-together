@@ -24,6 +24,7 @@ interface CreateMatchDialogProps {
 const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
   const [date, setDate] = useState<Date>();
   const [loading, setLoading] = useState(false);
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [formData, setFormData] = useState({
     sport: '',
     title: '',
@@ -70,6 +71,15 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
       return;
     }
 
+    if (!coordinates) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona una ubicación válida del mapa",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -82,6 +92,8 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
         sport_type: formData.sport,
         max_players: parseInt(formData.maxPlayers) || 10,
         price: parseFloat(formData.price) || 0,
+        // Agregamos las coordenadas al partido
+        coordinates: coordinates,
       });
 
       if (error) {
@@ -107,6 +119,7 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
           time: '',
         });
         setDate(undefined);
+        setCoordinates(null);
       }
     } catch (error) {
       toast({
@@ -123,9 +136,17 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleLocationChange = (value: string, coords?: { lat: number; lng: number }) => {
+    handleInputChange('location', value);
+    if (coords) {
+      setCoordinates(coords);
+      console.log('Coordenadas seleccionadas:', coords);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-gray-900">
             Crear nuevo partido
@@ -173,13 +194,14 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
             />
           </div>
 
-          {/* Location with Google Maps Autocomplete */}
+          {/* Location with Google Maps Autocomplete and Map */}
           <GoogleMapsAutocomplete
             value={formData.location}
-            onChange={(value) => handleInputChange('location', value)}
+            onChange={handleLocationChange}
             label="Ubicación"
             placeholder="Buscar dirección..."
             required={true}
+            showMap={true}
           />
 
           {/* Date and Time */}
@@ -259,6 +281,13 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
               </div>
             </div>
           </div>
+
+          {/* Coordenadas seleccionadas (solo para debug) */}
+          {coordinates && (
+            <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+              Coordenadas: {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}
+            </div>
+          )}
 
           {/* Buttons */}
           <div className="flex space-x-3 pt-4">
