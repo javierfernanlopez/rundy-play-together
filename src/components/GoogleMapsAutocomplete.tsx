@@ -67,6 +67,8 @@ const GoogleMapsAutocomplete = ({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
+    // Solo llamamos onChange con el texto cuando el usuario escribe
+    // Sin coordenadas para que el padre sepa que es escritura manual
     onChange(newValue);
   };
 
@@ -77,6 +79,11 @@ const GoogleMapsAutocomplete = ({
   const onScriptError = (error: Error) => {
     console.error('Error loading Google Maps script:', error);
   };
+
+  // Sincronizar el valor interno con el prop value cuando cambie desde el padre
+  React.useEffect(() => {
+    setInputValue(value);
+  }, [value]);
 
   return (
     <LoadScript
@@ -123,4 +130,3 @@ const GoogleMapsAutocomplete = ({
 };
 
 export default GoogleMapsAutocomplete;
-
