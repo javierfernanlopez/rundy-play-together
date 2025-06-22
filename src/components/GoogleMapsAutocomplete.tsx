@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Autocomplete, LoadScript } from '@react-google-maps/api';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,10 +15,7 @@ interface GoogleMapsAutocompleteProps {
   className?: string;
 }
 
-// Configuración de librerías necesarias para Google Maps
 const libraries: ("places")[] = ['places'];
-
-// API key de Google Maps desde variables de entorno
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyCIHD0nsV6U8JyOx1l-19iCakp2xY6nx1M';
 
 const GoogleMapsAutocomplete = ({ 
@@ -30,10 +27,18 @@ const GoogleMapsAutocomplete = ({
   className
 }: GoogleMapsAutocompleteProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  // El estado interno inputValue se inicializa con el valor del padre,
-  // y a partir de ahí gestiona sus propios cambios.
   const [inputValue, setInputValue] = useState(value);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  // --- CAMBIO CLAVE 1: Sincronizar desde el padre ---
+  // Este useEffect ahora es seguro. Solo actualiza el input si el valor
+  // cambia "desde fuera" (por ej, si el formulario se resetea).
+  // No entrará en conflicto con la escritura del usuario.
+  useEffect(() => {
+    if (value !== inputValue) {
+      setInputValue(value);
+    }
+  }, [value, inputValue]);
 
   const onLoad = useCallback((autocomplete: google.maps.places.Autocomplete) => {
     autocompleteRef.current = autocomplete;
@@ -44,22 +49,19 @@ const GoogleMapsAutocomplete = ({
     if (autocompleteRef.current) {
       const place = autocompleteRef.current.getPlace();
       
-      if (!place || !place.geometry || !place.geometry.location) {
-        console.warn('No hay detalles disponibles para la entrada:', place?.name);
-        // Si el usuario escribe algo y no selecciona, no hacemos nada aquí.
-        // El valor ya se está actualizando a través de handleInputChange.
+      if (!place?.geometry?.location) {
+        console.warn('El lugar seleccionado no tiene una ubicación válida.');
         return;
       }
 
-      const location = place.geometry.location;
+      const formattedAddress = place.formatted_address || place.name || '';
       const coordinates = {
-        lat: location.lat(),
-        lng: location.lng()
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng()
       };
 
-      const formattedAddress = place.formatted_address || place.name || '';
       setInputValue(formattedAddress);
-      // Notificamos al padre con la dirección formateada y las coordenadas
+      // Notificamos al padre con el valor final y las coordenadas
       onChange(formattedAddress, coordinates);
       
       console.log('Ubicación seleccionada:', formattedAddress);
@@ -67,13 +69,23 @@ const GoogleMapsAutocomplete = ({
     }
   }, [onChange]);
 
+  // --- CAMBIO CLAVE 2: Simplificar el manejador de input ---
+  // Esta función ahora SOLO actualiza el estado interno.
+  // NO llama al onChange del padre. Esto evita el re-renderizado en cada tecla.
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    // Solo llamamos onChange con el texto cuando el usuario escribe.
-    // De esta forma, el componente padre siempre tiene el valor actual,
-    // pero sin provocar el ciclo de re-renderizado problemático.
-    onChange(newValue);
+    setInputValue(e.target.value);
+  };
+  
+  // --- CAMBIO CLAVE 3: Añadir un manejador de "onBlur" ---
+  // Cuando el usuario hace clic fuera del input, consideramos que ha terminado
+  // de escribir manualmente. En este momento, actualizamos al padre.
+  const handleBlur = () => {
+    // Si el valor actual es diferente al del padre (prop `value`),
+    // notificamos el cambio. Pasamos 'undefined' para las coordenadas
+    // porque es una entrada manual.
+    if (inputValue !== value) {
+      onChange(inputValue, undefined);
+    }
   };
 
   const onScriptLoad = () => {
@@ -83,11 +95,6 @@ const GoogleMapsAutocomplete = ({
   const onScriptError = (error: Error) => {
     console.error('Error loading Google Maps script:', error);
   };
-
-  // --- ELIMINADO ---
-  // Se ha eliminado el `React.useEffect` que causaba el conflicto.
-  // El componente ahora es "no controlado" en el sentido de que no se fuerza
-  // a actualizarse desde el padre después de la carga inicial, lo que resuelve el bloqueo.
 
   return (
     <LoadScript
@@ -119,6 +126,7 @@ const GoogleMapsAutocomplete = ({
               placeholder={isLoaded ? placeholder : "Cargando Google Maps..."}
               value={inputValue}
               onChange={handleInputChange}
+              onBlur={handleBlur}
               className={cn("pl-10", className)}
               disabled={!isLoaded}
             />
@@ -133,4 +141,7 @@ const GoogleMapsAutocomplete = ({
   );
 };
 
-export default GoogleMapsAutocomplete;
+// --- CAMBIO CLAVE 4: Envolver en React.memo ---
+// Esto es un seguro adicional. Evita que el componente se vuelva a renderizar
+// si las props que le pasa el padre no han cambiado, optimizando el rendimiento.
+export default React.memo(GoogleMapsAutocomplete);
