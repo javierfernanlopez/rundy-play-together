@@ -5,9 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, MapPin, Clock, Users, Calendar, Euro, MessageCircle, Share2, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, MapPin, Calendar, Euro, Trash2, MessageCircle } from 'lucide-react';
 import { useMatches } from '@/hooks/useMatches';
+import { useMatchChat } from '@/hooks/useMatchChat';
 import { useToast } from '@/hooks/use-toast';
+import MatchChat from '@/components/MatchChat';
 
 const MatchDetails = () => {
   const {
@@ -27,6 +30,7 @@ const MatchDetails = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -179,27 +183,7 @@ const MatchDetails = () => {
   };
 
   const getParticipantName = (participant: any) => {
-    // Prioritize full name from participant's own profile
-    if (participant.profiles?.full_name) {
-      return participant.profiles.full_name;
-    }
-    
-    // If participant is creator, check for full name on creator_profile as a fallback
-    if (participant.user_id === match.creator_id && match.creator_profile?.full_name) {
-      return match.creator_profile.full_name;
-    }
-    
-    // If no full name, try email from participant's own profile
-    if (participant.profiles?.email) {
-      return participant.profiles.email.split('@')[0];
-    }
-    
-    // Finally, if participant is creator, try email from creator_profile
-    if (participant.user_id === match.creator_id && match.creator_profile?.email) {
-      return match.creator_profile.email.split('@')[0];
-    }
-    
-    return 'Usuario';
+    return participant.full_name || 'Usuario';
   };
 
   const getParticipantInitials = (participant: any) => {
@@ -207,19 +191,20 @@ const MatchDetails = () => {
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
   };
 
-  const getCreatorName = () => {
-    if (match?.creator_profile?.full_name) {
-      return match.creator_profile.full_name;
-    }
-    if (match?.creator_profile?.email) {
-      return match.creator_profile.email.split('@')[0];
-    }
-    return 'Organizador';
-  };
+  // Componente para el botón de chat con contador
+  const MatchChatButton = ({ matchId, participants, onOpenChat }: { matchId: string, participants: any[], onOpenChat: () => void }) => {
+    const { unreadCount } = useMatchChat(matchId, participants);
 
-  const getCreatorInitials = () => {
-    const name = getCreatorName();
-    return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+    return (
+      <Button variant="ghost" size="icon" onClick={onOpenChat} className="relative">
+        <MessageCircle className="h-6 w-6" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center min-w-[20px]">
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </span>
+        )}
+      </Button>
+    );
   };
 
   if (loading) {
@@ -255,9 +240,18 @@ const MatchDetails = () => {
             </Button>
             <h1 className="text-lg font-semibold text-gray-900">Detalles del partido</h1>
           </div>
-          {match.is_creator && <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(true)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-              <Trash2 className="h-5 w-5" />
-            </Button>}
+          <div className="flex items-center space-x-2">
+            {(match.is_participant || match.is_creator) && (
+              <MatchChatButton 
+                matchId={match.id} 
+                participants={match.participants || []} 
+                onOpenChat={() => setShowChatModal(true)}
+              />
+            )}
+            {match.is_creator && <Button variant="ghost" size="icon" onClick={() => setShowDeleteDialog(true)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                <Trash2 className="h-5 w-5" />
+              </Button>}
+          </div>
         </div>
       </div>
 
@@ -270,11 +264,6 @@ const MatchDetails = () => {
               <Badge className={getSportColor(match.sport_type)}>
                 {getSportName(match.sport_type)}
               </Badge>
-              <div className="flex space-x-2">
-                <Button variant="ghost" size="icon">
-                  <Share2 className="h-4 w-4" />
-                </Button>
-              </div>
             </div>
             
             <h2 className="text-xl font-bold text-gray-900 mb-4">{match.title}</h2>
@@ -304,30 +293,6 @@ const MatchDetails = () => {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Organizer Card */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg">Organizador</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="flex items-center space-x-3 mb-4">
-              <Avatar className="h-12 w-12">
-                <AvatarFallback className="bg-blue-100 text-blue-700">
-                  {getCreatorInitials()}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="font-medium">{getCreatorName()}</div>
-                {match.is_creator && <div className="text-sm text-blue-600">¡Eres tú!</div>}
-              </div>
-            </div>
-            {!match.is_creator && <Button variant="outline" className="w-full">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Contactar organizador
-              </Button>}
           </CardContent>
         </Card>
 
@@ -387,6 +352,26 @@ const MatchDetails = () => {
             </Button>}
         </div>
       </div>
+
+      {/* Chat Modal */}
+      <Dialog open={showChatModal} onOpenChange={setShowChatModal}>
+        <DialogContent className="max-w-md mx-auto max-h-[80vh] h-[600px] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <MessageCircle className="h-5 w-5 mr-2" />
+              Chat del Partido
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            <MatchChat 
+              matchId={match.id} 
+              participants={match.participants || []} 
+              isModal={true}
+              onClose={() => setShowChatModal(false)}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

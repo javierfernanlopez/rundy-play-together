@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -61,7 +60,7 @@ export const useMatches = () => {
       if (matchIds.length > 0) {
         const { data: allParticipants, error: allParticipantsError } = await supabase
           .from('match_participants')
-          .select('match_id, user_id')
+          .select('match_id, user_id, full_name')
           .in('match_id', matchIds);
         
         if (allParticipantsError) throw allParticipantsError;
@@ -105,6 +104,36 @@ export const useMatches = () => {
     }
   };
 
+  // Función para filtrar partidos futuros/actuales
+  const getFutureMatches = () => {
+    const now = new Date();
+    return matches.filter(match => new Date(match.date) >= now);
+  };
+
+  // Función para filtrar partidos pasados
+  const getPastMatches = () => {
+    const now = new Date();
+    return matches.filter(match => new Date(match.date) < now);
+  };
+
+  // Función para obtener partidos del usuario (futuros)
+  const getUserFutureMatches = () => {
+    const futureMatches = getFutureMatches();
+    return futureMatches.filter(match => match.is_creator || match.is_participant);
+  };
+
+  // Función para obtener partidos del usuario (pasados)
+  const getUserPastMatches = () => {
+    const pastMatches = getPastMatches();
+    return pastMatches.filter(match => match.is_creator || match.is_participant);
+  };
+
+  // Función para obtener partidos disponibles (futuros, no del usuario)
+  const getAvailableMatches = () => {
+    const futureMatches = getFutureMatches();
+    return futureMatches.filter(match => !match.is_creator && !match.is_participant);
+  };
+
   const createMatch = async (matchData: {
     title: string;
     description?: string;
@@ -142,12 +171,18 @@ export const useMatches = () => {
 
       if (error) throw error;
       
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
       // Agregar al creador como participante automáticamente
       // Esto disparará el trigger que incrementa current_players
       const { error: participantError } = await supabase
         .from('match_participants')
         .insert([
-          { match_id: data.id, user_id: user.id }
+          { match_id: data.id, user_id: user.id, full_name: profile?.full_name || user.email }
         ]);
 
       if (participantError) throw participantError;
@@ -164,10 +199,16 @@ export const useMatches = () => {
     if (!user) return { error: 'Usuario no autenticado' };
 
     try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
       const { error } = await supabase
         .from('match_participants')
         .insert([
-          { match_id: matchId, user_id: user.id }
+          { match_id: matchId, user_id: user.id, full_name: profile?.full_name || user.email }
         ]);
 
       if (error) throw error;
@@ -272,7 +313,7 @@ export const useMatches = () => {
       // Obtener información de todos los participantes
       const { data: participantsData, error: participantsError } = await supabase
         .from('match_participants')
-        .select('user_id, joined_at')
+        .select('user_id, joined_at, full_name')
         .eq('match_id', matchId);
 
       if (participantsError) {
@@ -282,39 +323,12 @@ export const useMatches = () => {
 
       console.log('Participantes obtenidos:', participantsData);
 
-      // Obtener perfiles de los participantes por separado
-      let participantsWithProfiles = [];
-      if (participantsData && participantsData.length > 0) {
-        const userIds = participantsData.map(p => p.user_id);
-        
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name, email')
-          .in('id', userIds);
-
-        if (profilesError) {
-          console.error('Error al obtener perfiles:', profilesError);
-        }
-
-        console.log('Perfiles obtenidos:', profilesData);
-
-        // Combinar participantes con sus perfiles
-        participantsWithProfiles = participantsData.map(participant => {
-          const profile = profilesData?.find(p => p.id === participant.user_id);
-          return {
-            user_id: participant.user_id,
-            joined_at: participant.joined_at,
-            profiles: profile || null
-          };
-        });
-      }
-
       const enrichedMatch = {
         ...data,
         is_creator: data.creator_id === user.id,
         is_participant: !!participantData,
         creator_profile: creatorProfile || null,
-        participants: participantsWithProfiles
+        participants: participantsData || []
       };
 
       console.log('Match enriquecido:', enrichedMatch);
@@ -339,6 +353,12 @@ export const useMatches = () => {
     joinMatch,
     leaveMatch,
     deleteMatch,
-    getMatchById
+    getMatchById,
+    // Nuevas funciones para filtrado
+    getFutureMatches,
+    getPastMatches,
+    getUserFutureMatches,
+    getUserPastMatches,
+    getAvailableMatches
   };
 };

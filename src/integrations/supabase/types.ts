@@ -9,20 +9,62 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      match_chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          message: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_chat_messages_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_participants: {
         Row: {
+          full_name: string | null
           id: string
           joined_at: string
           match_id: string
           user_id: string
         }
         Insert: {
+          full_name?: string | null
           id?: string
           joined_at?: string
           match_id: string
           user_id: string
         }
         Update: {
+          full_name?: string | null
           id?: string
           joined_at?: string
           match_id?: string
@@ -88,27 +130,33 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string | null
+          favorite_sports: string[] | null
           full_name: string | null
           id: string
           phone: string | null
+          skill_level: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
+          favorite_sports?: string[] | null
           full_name?: string | null
           id: string
           phone?: string | null
+          skill_level?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
+          favorite_sports?: string[] | null
           full_name?: string | null
           id?: string
           phone?: string | null
+          skill_level?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -118,10 +166,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_participant: {
+        Args: { match_id_to_check: string; user_id_to_check: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      skill_level_enum: "beginner" | "intermediate" | "advanced" | "expert"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -236,6 +287,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      skill_level_enum: ["beginner", "intermediate", "advanced", "expert"],
+    },
   },
 } as const
