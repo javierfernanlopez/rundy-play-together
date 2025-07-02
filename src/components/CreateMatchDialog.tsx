@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, MapPin, Users, Euro } from 'lucide-react';
-import { format } from "date-fns";
+import { format, isToday } from "date-fns";
 import { es } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useMatches } from '@/hooks/useMatches';
@@ -46,15 +46,29 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
 
   const timeSlots = useMemo(() => {
     const slots = [];
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
     for (let h = 8; h < 24; h++) {
       for (let m = 0; m < 60; m += 30) {
+        if (date && isToday(date)) {
+          if (h < currentHour || (h === currentHour && m <= currentMinute)) {
+            continue;
+          }
+        }
         const hour = h.toString().padStart(2, '0');
         const minute = m.toString().padStart(2, '0');
         slots.push(`${hour}:${minute}`);
       }
     }
     return slots;
-  }, []);
+  }, [date]);
+
+  const handleDateChange = (selectedDate: Date | undefined) => {
+    setDate(selectedDate);
+    handleInputChange('time', ''); // Reset time when date changes
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,7 +137,7 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+      <DialogContent showCloseButton={false} className="w-full max-w-md max-h-[90vh] overflow-y-auto sm:w-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-gray-900">
             Crear nuevo partido
@@ -207,7 +221,8 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                    onSelect={handleDateChange}
+                    fromDate={new Date()}
                     initialFocus
                     className="pointer-events-auto"
                   />
@@ -217,7 +232,7 @@ const CreateMatchDialog = ({ open, onOpenChange }: CreateMatchDialogProps) => {
 
             <div className="space-y-2">
               <Label htmlFor="time">Hora *</Label>
-              <Select value={formData.time} onValueChange={(value) => handleInputChange('time', value)}>
+              <Select value={formData.time} onValueChange={(value) => handleInputChange('time', value)} disabled={!date}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona una hora" />
                 </SelectTrigger>

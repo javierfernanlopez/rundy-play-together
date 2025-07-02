@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useMatchChat } from '@/hooks/useMatchChat';
+import { Message } from '@/hooks/useMatchChat';
 import { useAuth } from '@/hooks/useAuth';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,13 +12,23 @@ import { useToast } from '@/hooks/use-toast';
 interface MatchChatProps {
   matchId: string;
   participants: any[];
+  messages: Message[];
+  sendMessage: (message: string) => Promise<{ error: string | null }>;
+  chatLoading: boolean;
+  chatError: string | null;
   isModal?: boolean;
   onClose?: () => void;
 }
 
-const MatchChat = ({ matchId, participants, isModal = false, onClose }: MatchChatProps) => {
+const MatchChat = ({ 
+  matchId, 
+  participants, 
+  messages,
+  sendMessage,
+  chatLoading: loading,
+  isModal = false,
+}: MatchChatProps) => {
   const { user } = useAuth();
-  const { messages, loading, sendMessage, markAsRead } = useMatchChat(matchId, participants);
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -38,12 +48,7 @@ const MatchChat = ({ matchId, participants, isModal = false, onClose }: MatchCha
     scrollToBottom();
   }, [messages]);
 
-  // Marcar mensajes como leídos cuando se abre el modal
-  useEffect(() => {
-    if (isModal && messages.length > 0) {
-      markAsRead();
-    }
-  }, [isModal, messages.length, markAsRead]);
+
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,19 +17,21 @@ import { useAuth } from '@/hooks/useAuth';
 import { useMatches } from '@/hooks/useMatches';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import PullToRefresh from 'react-simple-pull-to-refresh';
+
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showCreateMatch, setShowCreateMatch] = useState(false);
+  const [activeMatchesTab, setActiveMatchesTab] = useState('upcoming'); // 'upcoming' o 'past'
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
-  const {
-    user,
-    signOut
-  } = useAuth();
+  const { user, signOut } = useAuth();
+  const location = useLocation();
   const {
     loading,
     getUserFutureMatches,
     getUserPastMatches,
-    getAvailableMatches
+    getAvailableMatches,
+    refetch: fetchMatches
   } = useMatches();
   const {
     profile,
@@ -58,6 +61,21 @@ const Index = () => {
       setSelectedSports(sportDisplayNames);
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (location.state) {
+      const { activeTab, activeSubTab } = location.state;
+      if (activeTab) {
+        setActiveTab(activeTab);
+      }
+      if (activeSubTab) {
+        // Asignar el valor correcto para la sub-pestaña
+        const subTabValue = activeSubTab === 'joined' ? 'upcoming' : 'created';
+        setActiveMatchesTab(subTabValue);
+      }
+    }
+  }, [location.state]);
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -110,6 +128,7 @@ const Index = () => {
   const createdPastMatches = userPastMatches.filter(match => match.is_creator);
   const joinedFutureMatches = userFutureMatches.filter(match => !match.is_creator && match.is_participant);
   const joinedPastMatches = userPastMatches.filter(match => !match.is_creator && match.is_participant);
+
   const getSportToggleClasses = (sport: string) => {
     const sportClasses: {
       [key: string]: string;
@@ -123,6 +142,7 @@ const Index = () => {
     };
     return sportClasses[sport] || 'text-gray-800 border-gray-300 hover:bg-gray-100 data-[state=on]:bg-gray-500 data-[state=on]:text-white data-[state=on]:border-gray-500';
   };
+
   const renderDashboard = () => <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -184,14 +204,15 @@ const Index = () => {
           </Card> : null}
       </div>
     </div>;
+
   const renderMyMatches = () => <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Mis partidos</h1>
       
       {/* Tabs */}
-      <Tabs defaultValue="created" className="w-full">
+      <Tabs defaultValue={activeMatchesTab} value={activeMatchesTab} onValueChange={setActiveMatchesTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="created">Creados</TabsTrigger>
-          <TabsTrigger value="joined">Unidos</TabsTrigger>
+          <TabsTrigger value="upcoming">Unidos</TabsTrigger>
         </TabsList>
         
         <TabsContent value="created" className="space-y-6 mt-6">
@@ -229,7 +250,7 @@ const Index = () => {
             </div>}
         </TabsContent>
         
-        <TabsContent value="joined" className="space-y-6 mt-6">
+        <TabsContent value="upcoming" className="space-y-6 mt-6">
           {/* Partidos unidos futuros */}
           <div className="space-y-3">
             <h3 className="text-md font-semibold text-gray-900 flex items-center">
@@ -366,9 +387,11 @@ const Index = () => {
       </div>
 
       {/* Main content */}
-      <div className="max-w-md mx-auto px-4 py-6 pb-24">
-        {getCurrentView()}
-      </div>
+      <PullToRefresh onRefresh={fetchMatches} pullingContent={<div className='text-center text-xs text-muted-foreground py-2'>Desliza hacia abajo para refrescar</div>} refreshingContent={<div className='text-center text-xs text-muted-foreground py-2'>Actualizando...</div>}>
+        <div className="max-w-md mx-auto px-4 py-6 pb-24 min-h-[calc(100vh-120px)]">
+          {getCurrentView()}
+        </div>
+      </PullToRefresh>
 
       {/* Floating Action Button */}
       <FloatingActionButton onClick={() => setShowCreateMatch(true)} />

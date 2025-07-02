@@ -24,6 +24,7 @@ interface Match {
     full_name?: string;
     email?: string;
   };
+  full_name?: string;
 }
 interface MatchCardProps {
   match: Match;
@@ -56,11 +57,19 @@ const MatchCard = ({
     });
   };
   const handleCardClick = () => {
-    navigate(`/match/${match.id}`);
+    navigate(`/match/${match.id}`, {
+      state: {
+        activeSubTab: type
+      }
+    });
   };
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevenir que se ejecute el click del card
-    navigate(`/match/${match.id}`);
+    navigate(`/match/${match.id}`, {
+      state: {
+        activeSubTab: type
+      }
+    });
   };
   const getButtonText = () => {
     if (type === 'recommended') return 'Unirse';
@@ -76,25 +85,10 @@ const MatchCard = ({
     if (type === 'created') return 'bg-green-600 hover:bg-green-700';
     return 'bg-gray-600 hover:bg-gray-700';
   };
-  const getCreatorName = () => {
-    if (match.creator_profile?.full_name) {
-      return match.creator_profile.full_name;
-    }
-    if (match.creator_profile?.email) {
-      return match.creator_profile.email.split('@')[0];
-    }
-    if (match.organizer) {
-      return match.organizer;
-    }
-    return 'Organizador';
-  };
-  const getCreatorInitials = () => {
-    const name = getCreatorName();
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
+
   return <Card className="hover:shadow-lg transition-all duration-300 border-0 shadow-md hover:scale-[1.02] cursor-pointer" onClick={handleCardClick}>
       <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-3">
+        <div className="flex justify-between items-end mb-3">
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-2">
               <Badge className={getSportColor(match.sport)}>
@@ -107,7 +101,7 @@ const MatchCard = ({
             </div>
             <h3 className="font-semibold text-gray-900 mb-1">{match.title}</h3>
             
-            <div className="space-y-1 text-sm text-gray-600">
+            <div className="space-y-1 text-sm text-gray-600 mt-2">
               <div className="flex items-center">
                 <MapPin className="h-4 w-4 mr-1" />
                 {match.location}
@@ -123,30 +117,18 @@ const MatchCard = ({
             </div>
           </div>
           
-          <div className="text-right">
-            <div className="flex items-center text-sm text-gray-600 mb-2">
+          <div className="flex flex-col items-end space-y-2">
+            <div className="flex items-center text-sm text-gray-600">
               <Users className="h-4 w-4 mr-1" />
               {match.current_players !== undefined && match.max_players !== undefined ? `${match.current_players}/${match.max_players}` : match.players}
             </div>
             {match.price && <div className="text-sm font-medium text-blue-600">
                 {match.price}
               </div>}
+            <Button size="sm" onClick={handleButtonClick} className={`${getButtonColor()}`}>
+              {getButtonText()}
+            </Button>
           </div>
-        </div>
-
-        <div className="flex justify-between items-center">
-          {!match.is_creator && <div className="flex items-center space-x-2">
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
-                  {getCreatorInitials()}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm text-gray-600">{getCreatorName()}</span>
-            </div>}
-          
-          <Button size="sm" onClick={handleButtonClick} className={`ml-auto ${getButtonColor()}`}>
-            {getButtonText()}
-          </Button>
         </div>
       </CardContent>
     </Card>;
