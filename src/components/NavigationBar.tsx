@@ -1,5 +1,4 @@
-
-import { Home, Calendar, Trophy, User } from 'lucide-react';
+import { Home, Trophy, User } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 interface NavigationBarProps {
@@ -15,7 +14,10 @@ const NavigationBar = ({ activeTab, onTabChange }: NavigationBarProps) => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+    <div 
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       <div className="max-w-md mx-auto px-4 py-2">
         <div className="flex justify-around">
           {tabs.map((tab) => {
@@ -27,13 +29,15 @@ const NavigationBar = ({ activeTab, onTabChange }: NavigationBarProps) => {
                 key={tab.id}
                 variant="ghost"
                 onClick={() => onTabChange(tab.id)}
-                className={`flex flex-col items-center space-y-1 h-auto py-2 px-4 ${
+                // ✅ LA CLASE 'space-y-1' HA SIDO ELIMINADA DE AQUÍ
+                className={`flex flex-col items-center h-auto py-2 px-4 ${
                   isActive 
                     ? 'text-blue-600' 
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
                 <Icon className={`h-5 w-5 ${isActive ? 'text-blue-600' : ''}`} />
+                {/* Puedes añadir un margen superior aquí si lo ves necesario, ej: mt-0.5 */}
                 <span className={`text-xs ${isActive ? 'font-medium' : ''}`}>
                   {tab.label}
                 </span>
