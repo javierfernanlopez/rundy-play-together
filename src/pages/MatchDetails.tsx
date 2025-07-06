@@ -259,7 +259,7 @@ const MatchDetails = () => {
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center">
             <Button variant="ghost" size="icon" onClick={handleBack} className="mr-3">
-              <ArrowLeft className="h-3 w-3" />
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-lg font-semibold text-gray-900">Detalles del partido</h1>
           </div>
@@ -305,8 +305,6 @@ const MatchDetails = () => {
                   <div className="font-medium">{match.location}</div>
                 </div>
               </div>
-              
-              
               
               <div className="flex items-center">
                 <Banknote className="h-5 w-5 mr-3 text-gray-400" />
